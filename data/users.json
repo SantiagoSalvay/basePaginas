@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Usuario Demo",
+      "email": "demo@example.com",
+      "password": "$2a$10$8KbM4S4ohI9NoIL9jKXiNOjU1XnQYq4HNMGYbZ1HLlVF2gDgOKrUW",
+      "emailVerified": true,
+      "createdAt": "2025-03-06T10:00:00.000Z"
+    },
+    {
+      "id": "05b6a18c-cf26-41cf-aead-530e065a16b4",
+      "name": "Santiago",
+      "email": "js.salvay@gmail.com",
+      "password": "$2b$10$MEv8cM1sKbdjW5ALlxALoekXt1SJs5zC2N1PZ4tXHpFCOhasyPwN6",
+      "phone": "2384723423",
+      "role": "user",
+      "emailVerified": false,
+      "verificationToken": "3991f563-c61a-48ed-8499-50a75ede2939",
+      "createdAt": "2025-03-06T14:04:11.752Z",
+      "resetToken": null,
+      "resetTokenExpiry": null
+    },
+    {
+      "id": "admin",
+      "name": "Administrador",
+      "email": "admin@admin",
+      "password": "$2b$10$gZRsoUdJyUPgpvDzyS.hReookVYBygDjSC/AuMGp35OUYGJMIiPsO",
+      "phone": "",
+      "role": "admin",
+      "emailVerified": true,
+      "createdAt": "2025-03-06T14:18:00.000Z"
+    }
+  ]
+}

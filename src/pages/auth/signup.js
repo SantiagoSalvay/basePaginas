@@ -1,0 +1,446 @@
+import { useState, useEffect } from "react";
+import { signIn, getCsrfToken } from "next-auth/react";
+import { useRouter } from "next/router";
+import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaGoogle } from "react-icons/fa";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiPhone } from "react-icons/fi";
+import PageTransition from "../../components/PageTransition";
+import { toast } from "react-toastify";
+
+export default function SignUp({ csrfToken }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [error, setError] = useState(null);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const router = useRouter();
+
+  // Evaluar la fortaleza de la contraseña
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(0);
+      return;
+    }
+
+    let strength = 0;
+    // Longitud mínima
+    if (password.length >= 8) strength += 1;
+    // Contiene números
+    if (/\d/.test(password)) strength += 1;
+    // Contiene letras minúsculas
+    if (/[a-z]/.test(password)) strength += 1;
+    // Contiene letras mayúsculas
+    if (/[A-Z]/.test(password)) strength += 1;
+    // Contiene caracteres especiales
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+    setPasswordStrength(strength);
+  }, [password]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      setLoading(false);
+      return;
+    }
+
+    if (passwordStrength < 3) {
+      setError("La contraseña es demasiado débil");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Enviar datos de registro al servidor
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error al registrar usuario");
+      }
+
+      // Guardar los datos del usuario en localStorage para usarlos después de la verificación
+      const userData = {
+        name,
+        email,
+        phone,
+        password
+      };
+      
+      localStorage.setItem('pendingUserRegistration', JSON.stringify(userData));
+      
+      // Simular el envío de un correo de verificación
+      // En un entorno real, aquí enviarías el correo con un token único
+      
+      // Redirigir a la página de verificación pendiente
+      router.push({
+        pathname: '/auth/verification-pending',
+        query: { email }
+      });
+      
+    } catch (error) {
+      setError(error.message || "Ocurrió un error. Por favor, inténtalo de nuevo.");
+      setLoading(false);
+    }
+  };
+
+  // Animaciones
+  const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { duration: 0.8 },
+    },
+  };
+
+  const slideRight = {
+    hidden: { opacity: 0, x: -100 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 100, 
+        damping: 15,
+        duration: 0.8 
+      },
+    },
+  };
+
+  const slideLeft = {
+    hidden: { opacity: 0, x: 100 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 100, 
+        damping: 15,
+        duration: 0.8 
+      },
+    },
+  };
+
+  return (
+    <PageTransition>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Head>
+          <title>Crear Cuenta | ModaVista</title>
+        </Head>
+
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeIn}
+          className="max-w-4xl w-full flex flex-col md:flex-row bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden"
+        >
+          {/* Formulario a la izquierda */}
+          <motion.div 
+            variants={slideRight} 
+            className="md:w-1/2 px-6 py-6 sm:px-7 min-h-[520px] flex flex-col"
+          >
+            <div className="text-center mb-5">
+              <Link href="/">
+                <h1 className="text-2xl font-display font-bold text-primary-600 dark:text-white">
+                  ModaVista
+                </h1>
+              </Link>
+              <p className="mt-1 text-gray-600 dark:text-gray-300">
+                Crea tu cuenta para comenzar
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-800 dark:text-white bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <FaGoogle className="text-red-500 mr-2" size={18} />
+                Continuar con Google
+              </button>
+            </div>
+
+            <div className="mt-4 relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  O regístrate con
+                </span>
+              </div>
+            </div>
+
+            <form className="mt-3 space-y-2 flex-grow" onSubmit={handleSubmit}>
+              <input name="csrfToken" type="hidden" defaultValue={csrfToken} />
+
+              {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              {confirmationMessage && (
+                <div className="p-3 bg-green-50 text-green-600 rounded-lg text-sm">
+                  {confirmationMessage}
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Nombre completo
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input-field pl-10 py-2.5 text-sm"
+                    placeholder="Tu nombre"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiMail className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input-field pl-10 py-2.5 text-sm"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Teléfono (opcional)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiPhone className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="input-field pl-10 py-2.5 text-sm"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-field pl-10 pr-10 py-2.5 text-sm"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <FiEyeOff className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" size={18} />
+                    ) : (
+                      <FiEye className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" size={18} />
+                    )}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Mínimo 6 caracteres
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Confirmar contraseña
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiLock className="text-gray-400" size={18} />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field pl-10 pr-10 py-2.5 text-sm"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <FiEyeOff className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" size={18} />
+                    ) : (
+                      <FiEye className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center mt-2">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  required
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="terms"
+                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                >
+                  Acepto los{" "}
+                  <a
+                    href="#"
+                    className="text-primary-600 hover:text-primary-500"
+                  >
+                    términos y condiciones
+                  </a>
+                </label>
+              </div>
+
+              <div className="mt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                >
+                  {loading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    "Crear Cuenta"
+                  )}
+                </button>
+              </div>
+            </form>
+
+            <div className="mt-auto text-center py-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                ¿Ya tienes una cuenta?{" "}
+                <Link href="/auth/signin">
+                  <span className="font-medium text-primary-600 hover:text-primary-500">
+                    Inicia sesión
+                  </span>
+                </Link>
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Imagen a la derecha */}
+          <motion.div 
+            variants={slideLeft} 
+            className="md:w-1/2 relative hidden md:block min-h-[520px]"
+          >
+            <div className="relative h-full">
+              <Image
+                src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&q=80&fit=crop"
+                alt="Moda Exclusiva"
+                layout="fill"
+                objectFit="cover"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col items-center justify-center p-8 text-center">
+                <h2 className="text-3xl font-display font-bold text-white mb-4">Únete a nuestra comunidad</h2>
+                <p className="text-white text-lg mb-6">Crea tu cuenta y descubre nuestras colecciones exclusivas, ofertas especiales y mucho más.</p>
+                <div className="w-16 h-1 bg-white"></div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </PageTransition>
+  );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {
+      csrfToken: await getCsrfToken(context),
+    },
+  };
+}
