@@ -1,9 +1,14 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { FiShoppingBag, FiHeart } from "react-icons/fi";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import { toast } from "react-toastify";
 
 const ProductCard = ({ product }) => {
   const { name, price, image, category } = product;
+  const { data: session } = useSession();
+  const router = useRouter();
 
   // Función para determinar la URL de la imagen
   const getImageUrl = (imageUrl) => {
@@ -13,6 +18,41 @@ const ProductCard = ({ product }) => {
     }
     // Si no, es una imagen subida localmente
     return imageUrl;
+  };
+
+  // Función para verificar si el usuario está autenticado
+  const checkAuthentication = (action) => {
+    if (!session) {
+      toast.info("Debes iniciar sesión para continuar", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      router.push("/auth/signin");
+      return false;
+    }
+    return true;
+  };
+
+  // Función para agregar al carrito
+  const addToCart = () => {
+    if (checkAuthentication("carrito")) {
+      // Aquí iría la lógica para agregar al carrito
+      toast.success(`${name} agregado al carrito`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // Función para agregar a favoritos
+  const addToFavorites = () => {
+    if (checkAuthentication("favoritos")) {
+      // Aquí iría la lógica para agregar a favoritos
+      toast.success(`${name} agregado a favoritos`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
   };
 
   return (
@@ -39,12 +79,14 @@ const ProductCard = ({ product }) => {
             <button
               className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
               aria-label="Add to cart"
+              onClick={addToCart}
             >
               <FiShoppingBag className="text-primary-600" size={20} />
             </button>
             <button
               className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
               aria-label="Add to wishlist"
+              onClick={addToFavorites}
             >
               <FiHeart className="text-primary-600" size={20} />
             </button>
