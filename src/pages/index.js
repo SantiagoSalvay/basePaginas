@@ -128,9 +128,9 @@ export default function Home() {
         </AnimatedSection>
 
         {/* Featured Products */}
-        <AnimatedSection animation="scrollSlide" className="py-20 bg-gray-50 dark:bg-gray-900">
+        <AnimatedSection animation="scrollSlide" className="py-6 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
+            <div className="text-center mb-6">
               <h2 className="section-title dark:text-white">Colección Destacada</h2>
               <p className="section-subtitle">Descubre nuestras piezas más exclusivas, diseñadas para marcar tendencia</p>
             </div>
@@ -148,17 +148,28 @@ export default function Home() {
                 <p className="text-gray-600 dark:text-gray-400">No hay productos destacados disponibles en este momento.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {featuredProducts.map((product, index) => (
-                  <AnimatedSection 
-                    key={product.id} 
-                    animation="slideUp" 
-                    delay={index * 0.1}
-                    threshold={0.2}
-                  >
-                    <ProductCard product={product} />
-                  </AnimatedSection>
-                ))}
+              <div className="relative overflow-hidden">
+                <div 
+                  className="flex gap-8 animate-carousel hover:pause-animation"
+                  style={{
+                    width: `${featuredProducts.length * 320}px`
+                  }}
+                >
+                  {[...featuredProducts, ...featuredProducts].map((product, index) => (
+                    <div 
+                      key={`${product.id}-${index}`} 
+                      className="w-[300px] flex-shrink-0 carousel-item"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.parentElement.style.animationPlayState = 'paused';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.parentElement.style.animationPlayState = 'running';
+                      }}
+                    >
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             

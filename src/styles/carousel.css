@@ -1,0 +1,27 @@
+@keyframes carousel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-carousel {
+  animation: carousel 5ms linear infinite;
+}
+
+.hover\:pause-animation:hover {
+  animation-play-state: paused;
+}
+
+.carousel-item {
+  transition: background-color 0.3s ease;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translate3d(0, 0, 0);
+}
+
+.carousel-item:hover {
+  background-color: rgba(30, 64, 175, 0.7); 
+}
