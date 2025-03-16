@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { toast } from "react-toastify";
 
 const ProductCard = ({ product }) => {
-  const { name, price, image, category } = product;
+  const { name, price, image, category, id } = product;
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -61,7 +61,7 @@ const ProductCard = ({ product }) => {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
       }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl card group"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl card group relative"
     >
       <div className="relative h-80 w-full overflow-hidden">
         <Image
@@ -97,23 +97,30 @@ const ProductCard = ({ product }) => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{name}</h3>
         <div className="flex justify-between items-center mt-2">
           <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{`€${price.toFixed(2)}`}</p>
-          <div className="flex items-center">
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <svg
-                  key={star}
-                  className={`w-4 h-4 ${
-                    star <= 4 ? "text-yellow-500" : "text-gray-300"
-                  }`}
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-            </div>
-            <span className="text-xs text-gray-500 ml-1">(24)</span>
+        </div>
+        
+        {/* Estrellas - Movidas a su propia sección */}
+        <div className="flex items-center mt-2 mb-4">
+          <div className="flex">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <svg
+                key={star}
+                className={`w-4 h-4 ${
+                  star <= 4 ? "text-yellow-500" : "text-gray-300"
+                }`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            ))}
           </div>
+          <span className="text-xs text-gray-500 ml-1">(24)</span>
+        </div>
+        
+        {/* Unique Product ID Badge */}
+        <div className="absolute bottom-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+          ID: {id}
         </div>
       </div>
     </motion.div>
