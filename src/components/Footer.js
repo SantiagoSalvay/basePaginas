@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { FaFacebook, FaTwitter, FaInstagram, FaPinterest } from "react-icons/fa";
+import { useCurrency } from "../context/CurrencyContext";
 
 const Footer = () => {
+  const { t } = useCurrency();
+
   return (
     <footer className="bg-gray-900 text-white py-16">
       <div className="container mx-auto px-4">
@@ -10,7 +13,7 @@ const Footer = () => {
           <div>
             <h3 className="text-2xl font-display font-bold mb-4">ModaVista</h3>
             <p className="text-gray-400 mb-6">
-              Diseños exclusivos que transforman tu imagen y elevan tu presencia.
+              {t('welcome')}
             </p>
             <div className="flex space-x-4">
               <a
@@ -46,33 +49,33 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Enlaces Rápidos</h4>
+            <h4 className="text-lg font-bold mb-4">{t('quickLinks')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Inicio
+                    {t('home')}
                   </span>
                 </Link>
               </li>
               <li>
                 <Link href="/coleccion">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Colección
+                    {t('products')}
                   </span>
                 </Link>
               </li>
               <li>
                 <Link href="/nosotros">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Nosotros
+                    {t('about')}
                   </span>
                 </Link>
               </li>
               <li>
                 <Link href="/contacto">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Contacto
+                    {t('contact')}
                   </span>
                 </Link>
               </li>
@@ -81,33 +84,26 @@ const Footer = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Legal</h4>
+            <h4 className="text-lg font-bold mb-4">{t('legal')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/terminos">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Términos de Servicio
+                    {t('termsAndConditions')}
                   </span>
                 </Link>
               </li>
               <li>
                 <Link href="/privacidad">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Política de Privacidad
+                    {t('privacyPolicy')}
                   </span>
                 </Link>
               </li>
               <li>
-                <Link href="/cookies">
+                <Link href="/faq">
                   <span className="text-gray-400 hover:text-white transition-colors">
-                    Política de Cookies
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/devoluciones">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Política de Devoluciones
+                    {t('faq')}
                   </span>
                 </Link>
               </li>
@@ -116,29 +112,30 @@ const Footer = () => {
 
           {/* Newsletter */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Suscríbete</h4>
+            <h4 className="text-lg font-bold mb-4">{t('newsletter')}</h4>
             <p className="text-gray-400 mb-4">
-              Recibe nuestras novedades y ofertas exclusivas.
+              {t('subscribeMessage')}
             </p>
-            <form className="flex flex-col space-y-2">
+            <form className="flex">
               <input
                 type="email"
-                placeholder="Tu correo electrónico"
-                className="px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                required
+                placeholder={t('email')}
+                className="bg-gray-800 text-white px-4 py-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500 w-full"
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-r-md transition-colors"
               >
-                Suscribirse
+                {t('submit')}
               </button>
             </form>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-          <p>© {new Date().getFullYear()} ModaVista. Todos los derechos reservados.</p>
+        <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
+          <p>
+            &copy; {new Date().getFullYear()} ModaVista. {t('copyright')}
+          </p>
         </div>
       </div>
     </footer>

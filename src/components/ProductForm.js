@@ -1,15 +1,16 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { FiUpload, FiX, FiImage } from "react-icons/fi";
+import { FiUpload, FiX, FiImage, FiPlus } from "react-icons/fi";
 
 const ProductForm = ({ onProductAdded }) => {
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     price: "",
     category: "Camisas",
     rating: 5,
-    image: ""
+    image: "",
+    sizes: [],
+    currency: "ARS" // Siempre en pesos argentinos
   });
   
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,7 @@ const ProductForm = ({ onProductAdded }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [sizeInput, setSizeInput] = useState("");
   
   const fileInputRef = useRef(null);
   
@@ -124,12 +126,22 @@ const ProductForm = ({ onProductAdded }) => {
         throw new Error("Por favor complete todos los campos obligatorios");
       }
       
+      if (formData.sizes.length === 0) {
+        throw new Error("Por favor agregue al menos un talle");
+      }
+      
+      // Asegurarse de que la moneda sea siempre ARS
+      const productData = {
+        ...formData,
+        currency: "ARS" // Forzar moneda a pesos argentinos
+      };
+      
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(productData),
         credentials: 'include'
       });
       
@@ -143,11 +155,12 @@ const ProductForm = ({ onProductAdded }) => {
       // Resetear el formulario
       setFormData({
         name: "",
-        description: "",
         price: "",
         category: "Camisas",
         rating: 5,
-        image: ""
+        image: "",
+        sizes: [],
+        currency: "ARS"
       });
       setPreviewImage(null);
       
@@ -162,6 +175,33 @@ const ProductForm = ({ onProductAdded }) => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Manejar la adición de un talle
+  const handleAddSize = () => {
+    if (!sizeInput.trim()) return;
+    
+    // Convertir a mayúsculas y verificar si ya existe
+    const formattedSize = sizeInput.trim().toUpperCase();
+    if (formData.sizes.includes(formattedSize)) {
+      setError("Este talle ya ha sido agregado");
+      return;
+    }
+    
+    setFormData({
+      ...formData,
+      sizes: [...formData.sizes, formattedSize]
+    });
+    
+    setSizeInput("");
+  };
+  
+  // Eliminar un talle
+  const handleRemoveSize = (sizeToRemove) => {
+    setFormData({
+      ...formData,
+      sizes: formData.sizes.filter(size => size !== sizeToRemove)
+    });
   };
   
   return (
@@ -206,22 +246,28 @@ const ProductForm = ({ onProductAdded }) => {
             />
           </div>
           
-          {/* Precio */}
+          {/* Precio (siempre en ARS) */}
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Precio (€) *
+              Precio (ARS) *
             </label>
-            <input
-              type="number"
-              id="price"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              step="0.01"
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
+            <div className="flex items-center">
+              <span className="text-gray-500 dark:text-gray-400 mr-2">$</span>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              El precio se ingresa en Pesos Argentinos
+            </p>
           </div>
           
           {/* Categoría */}
@@ -264,19 +310,53 @@ const ProductForm = ({ onProductAdded }) => {
           </div>
         </div>
         
-        {/* Descripción */}
+        {/* Talles */}
         <div className="mb-6">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Descripción
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Talles *
           </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="3"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          ></textarea>
+          <div className="flex items-center space-x-2 mb-2">
+            <input
+              type="text"
+              value={sizeInput}
+              onChange={(e) => setSizeInput(e.target.value)}
+              placeholder="Agregar talle (ej: S, M, L, XL)"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={handleAddSize}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <FiPlus size={18} />
+            </button>
+          </div>
+          
+          {formData.sizes.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.sizes.map((size) => (
+                <div 
+                  key={size} 
+                  className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full flex items-center"
+                >
+                  <span className="mr-1">{size}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSize(size)}
+                    className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                  >
+                    <FiX size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {formData.sizes.length === 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Agregue al menos un talle para el producto
+            </p>
+          )}
         </div>
         
         {/* Subida de imagen */}

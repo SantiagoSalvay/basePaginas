@@ -4,11 +4,15 @@ import { FiShoppingBag, FiHeart } from "react-icons/fi";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
+import { useState, useEffect } from "react";
+import { convertPrice, formatPrice } from "../utils/currencyUtils";
+import { useCurrency } from "../context/CurrencyContext";
 
 const ProductCard = ({ product }) => {
-  const { name, price, image, category, id } = product;
+  const { name, price, image, category, id, sizes = [], currency = "ARS" } = product;
   const { data: session } = useSession();
   const router = useRouter();
+  const { currency: selectedCurrency, t } = useCurrency();
 
   // Función para determinar la URL de la imagen
   const getImageUrl = (imageUrl) => {
@@ -23,7 +27,7 @@ const ProductCard = ({ product }) => {
   // Función para verificar si el usuario está autenticado
   const checkAuthentication = (action) => {
     if (!session) {
-      toast.info("Debes iniciar sesión para continuar", {
+      toast.info(t('login'), {
         position: "top-center",
         autoClose: 3000,
       });
@@ -37,7 +41,7 @@ const ProductCard = ({ product }) => {
   const addToCart = () => {
     if (checkAuthentication("carrito")) {
       // Aquí iría la lógica para agregar al carrito
-      toast.success(`${name} agregado al carrito`, {
+      toast.success(`${name} ${t('addToCart').toLowerCase()}`, {
         position: "top-right",
         autoClose: 3000,
       });
@@ -48,7 +52,7 @@ const ProductCard = ({ product }) => {
   const addToFavorites = () => {
     if (checkAuthentication("favoritos")) {
       // Aquí iría la lógica para agregar a favoritos
-      toast.success(`${name} agregado a favoritos`, {
+      toast.success(`${name} ${t('addToWishlist').toLowerCase()}`, {
         position: "top-right",
         autoClose: 3000,
       });
@@ -78,14 +82,14 @@ const ProductCard = ({ product }) => {
           <div className="flex space-x-2">
             <button
               className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
-              aria-label="Add to cart"
+              aria-label={t('addToCart')}
               onClick={addToCart}
             >
               <FiShoppingBag className="text-primary-600" size={20} />
             </button>
             <button
               className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
-              aria-label="Add to wishlist"
+              aria-label={t('addToWishlist')}
               onClick={addToFavorites}
             >
               <FiHeart className="text-primary-600" size={20} />
@@ -95,8 +99,26 @@ const ProductCard = ({ product }) => {
       </div>
       <div className="p-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{name}</h3>
-        <div className="flex justify-between items-center mt-2">
-          <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{`€${price.toFixed(2)}`}</p>
+        
+        {/* Talles disponibles */}
+        {sizes && sizes.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {sizes.map((size) => (
+              <span 
+                key={size} 
+                className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-800 dark:text-gray-300 rounded"
+              >
+                {size}
+              </span>
+            ))}
+          </div>
+        )}
+        
+        {/* Precio en la moneda global seleccionada */}
+        <div className="flex flex-col mt-3">
+          <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+            {formatPrice(convertPrice(price, currency, selectedCurrency), selectedCurrency)}
+          </p>
         </div>
         
         {/* Estrellas - Movidas a su propia sección */}
@@ -115,12 +137,12 @@ const ProductCard = ({ product }) => {
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-500 ml-1">(24)</span>
+          <span className="text-xs text-gray-500 ml-1">{t('reviews')} (24)</span>
         </div>
         
         {/* Unique Product ID Badge */}
         <div className="absolute bottom-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-2 py-1 rounded">
-          ID: {id}
+          {t('id')}: {id}
         </div>
       </div>
     </motion.div>

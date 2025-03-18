@@ -65,6 +65,14 @@ export default async function handler(req, res) {
       if (!product.name || !product.price || !product.category || !product.image) {
         return res.status(400).json({ error: "Datos de producto incompletos" });
       }
+      
+      // Validar que tenga al menos un talle
+      if (!product.sizes || !Array.isArray(product.sizes) || product.sizes.length === 0) {
+        return res.status(400).json({ error: "El producto debe tener al menos un talle" });
+      }
+      
+      // Forzar la moneda a ARS
+      product.currency = "ARS";
 
       const newProduct = addProduct(product);
       return res.status(201).json(newProduct);
@@ -124,6 +132,17 @@ export default async function handler(req, res) {
       // Validar datos del producto
       if (!product.id || !product.name || !product.price || !product.category || !product.image) {
         return res.status(400).json({ error: "Datos de producto incompletos" });
+      }
+      
+      // Validar que tenga al menos un talle
+      if (!product.sizes || !Array.isArray(product.sizes) || product.sizes.length === 0) {
+        return res.status(400).json({ error: "El producto debe tener al menos un talle" });
+      }
+      
+      // Validar moneda
+      const validCurrencies = ["ARS", "USD", "EUR", "PYG", "BRL"];
+      if (!product.currency || !validCurrencies.includes(product.currency)) {
+        return res.status(400).json({ error: "Moneda no válida" });
       }
 
       // Verificar si es un producto estático (no se pueden editar)

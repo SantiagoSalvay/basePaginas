@@ -2,6 +2,7 @@ import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { AnimatePresence } from "framer-motion";
 import { ToastContainer } from "react-toastify";
+import { CurrencyProvider } from "../context/CurrencyContext";
 import "react-toastify/dist/ReactToastify.css";
 import "../styles/globals.css";
 
@@ -13,21 +14,23 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, router }) {
       refetchOnWindowFocus={true} // Refrescar cuando la ventana recupera el foco
     >
       <ThemeProvider attribute="class">
-        <AnimatePresence mode="wait" initial={false}>
-          <Component {...pageProps} key={router.route} />
-        </AnimatePresence>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
+        <CurrencyProvider>
+          <AnimatePresence mode="wait" initial={false}>
+            <Component {...pageProps} key={router.route} />
+          </AnimatePresence>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
+        </CurrencyProvider>
       </ThemeProvider>
     </SessionProvider>
   );

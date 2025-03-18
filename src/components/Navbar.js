@@ -4,10 +4,13 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiSun, FiMoon, FiMenu, FiX, FiUser } from "react-icons/fi";
+import CurrencySelector from "./CurrencySelector";
+import { useCurrency } from "../context/CurrencyContext";
 
 const Navbar = () => {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+  const { t } = useCurrency();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,7 +93,7 @@ const Navbar = () => {
                     : "text-white"
                 }`}
               >
-                Inicio
+                {t('home')}
               </span>
             </Link>
             <Link href="/coleccion">
@@ -101,7 +104,7 @@ const Navbar = () => {
                     : "text-white"
                 }`}
               >
-                Colección
+                {t('products')}
               </span>
             </Link>
             <Link href="/nosotros">
@@ -112,7 +115,7 @@ const Navbar = () => {
                     : "text-white"
                 }`}
               >
-                Nosotros
+                {t('about')}
               </span>
             </Link>
             <Link href="/contacto">
@@ -123,13 +126,16 @@ const Navbar = () => {
                     : "text-white"
                 }`}
               >
-                Contacto
+                {t('contact')}
               </span>
             </Link>
           </nav>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
+            {/* Currency Selector */}
+            <CurrencySelector />
+            
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -138,7 +144,7 @@ const Navbar = () => {
                   ? "text-gray-800 dark:text-white"
                   : "text-white"
               }`}
-              aria-label="Toggle Theme"
+              aria-label={theme === "dark" ? t('lightMode') : t('darkMode')}
             >
               {theme === "dark" ? <FiSun size={20} /> : <FiMoon size={20} />}
             </button>
@@ -168,14 +174,14 @@ const Navbar = () => {
                   {session.user.role !== 'admin' && (
                     <Link href="/user/dashboard">
                       <div className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        Mi Perfil
+                        {t('profile')}
                       </div>
                     </Link>
                   )}
                   {session.user.role === "admin" && (
                     <Link href="/admin/dashboard">
                       <div className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        Panel de Administración
+                        {t('adminPanel')}
                       </div>
                     </Link>
                   )}
@@ -183,7 +189,7 @@ const Navbar = () => {
                     onClick={() => signOut()}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    Cerrar Sesión
+                    {t('logout')}
                   </button>
                 </div>
               </div>
@@ -195,7 +201,7 @@ const Navbar = () => {
                     ? "text-gray-800 dark:text-white"
                     : "text-white"
                 }`}
-                aria-label="Sign In"
+                aria-label={t('login')}
               >
                 <FiUser size={20} />
               </button>
@@ -209,7 +215,7 @@ const Navbar = () => {
                   ? "text-gray-800 dark:text-white"
                   : "text-white"
               }`}
-              aria-label="Toggle Mobile Menu"
+              aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
             >
               {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </button>
@@ -225,104 +231,61 @@ const Navbar = () => {
             animate="open"
             exit="closed"
             variants={menuVariants}
-            className="md:hidden fixed inset-y-0 right-0 w-full max-w-xs bg-white dark:bg-gray-900 shadow-xl z-50 overflow-y-auto"
+            className="fixed inset-0 bg-white dark:bg-gray-900 z-40 md:hidden flex flex-col pt-16"
           >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-display font-bold text-primary-600 dark:text-white">
-                  ModaVista
-                </h2>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-white"
-                  aria-label="Close Menu"
-                >
-                  <FiX size={24} />
-                </button>
-              </div>
-
-              <nav className="space-y-6">
+            <div className="container mx-auto px-4 py-8 flex-1 overflow-y-auto">
+              <nav className="flex flex-col space-y-6">
                 <Link href="/">
-                  <div
+                  <span
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block text-lg font-medium text-gray-800 dark:text-white hover:text-primary-600 dark:hover:text-primary-400"
+                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
                   >
-                    Inicio
-                  </div>
+                    {t('home')}
+                  </span>
                 </Link>
                 <Link href="/coleccion">
-                  <div
+                  <span
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block text-lg font-medium text-gray-800 dark:text-white hover:text-primary-600 dark:hover:text-primary-400"
+                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
                   >
-                    Colección
-                  </div>
+                    {t('products')}
+                  </span>
                 </Link>
                 <Link href="/nosotros">
-                  <div
+                  <span
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block text-lg font-medium text-gray-800 dark:text-white hover:text-primary-600 dark:hover:text-primary-400"
+                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
                   >
-                    Nosotros
-                  </div>
+                    {t('about')}
+                  </span>
                 </Link>
                 <Link href="/contacto">
-                  <div
+                  <span
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block text-lg font-medium text-gray-800 dark:text-white hover:text-primary-600 dark:hover:text-primary-400"
+                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
                   >
-                    Contacto
-                  </div>
+                    {t('contact')}
+                  </span>
                 </Link>
-              </nav>
-
-              <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                {session ? (
-                  <div>
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {session.user.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {session.user.email}
-                      </p>
+                
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">{t('currency')}</span>
+                      <CurrencySelector />
                     </div>
-                    {session.user.role !== 'admin' && (
-                      <Link href="/user/dashboard">
-                        <div
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="w-full py-3 px-4 mb-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-lg font-medium hover:bg-indigo-200 dark:hover:bg-indigo-800 cursor-pointer"
-                        >
-                          Mi Perfil
-                        </div>
-                      </Link>
-                    )}
-                    {session.user.role === "admin" && (
-                      <Link href="/admin/dashboard">
-                        <div
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="w-full py-3 px-4 mb-3 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-lg font-medium hover:bg-indigo-200 dark:hover:bg-indigo-800 cursor-pointer"
-                        >
-                          Panel de Administración
-                        </div>
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => signOut()}
-                      className="w-full py-3 px-4 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700"
-                    >
-                      Cerrar Sesión
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">{t('theme')}</span>
+                      <button
+                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white"
+                      >
+                        {theme === "dark" ? <FiSun size={20} /> : <FiMoon size={20} />}
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => signIn()}
-                    className="w-full py-3 px-4 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
-                  >
-                    Iniciar Sesión
-                  </button>
-                )}
-              </div>
+                </div>
+              </nav>
             </div>
           </motion.div>
         )}
