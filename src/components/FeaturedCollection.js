@@ -1,106 +1,102 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiTrash2, FiPlus, FiSearch, FiEye } from 'react-icons/fi';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import useSWR, { mutate } from 'swr';
-
-const fetcher = url => axios.get(url).then(res => res.data);
 
 const FeaturedCollection = () => {
   const [productId, setProductId] = useState('');
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [previewMode, setPreviewMode] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Usar SWR para manejar el estado y las actualizaciones
-  const { data: featuredProductIds, error: featuredError } = useSWR('/api/featured-products', fetcher);
-  const { data: allProductsData, error: productsError } = useSWR('/api/products', fetcher);
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const [featuredRes, productsRes] = await Promise.all([
+        axios.get('/api/featured-products'),
+        axios.get('/api/products')
+      ]);
 
-  // Procesar los productos
-  const allProducts = allProductsData ? Object.values(allProductsData).flat() : [];
-  const featuredProducts = featuredProductIds 
-    ? allProducts.filter(product => featuredProductIds.includes(product.id))
-    : [];
+      const products = Object.values(productsRes.data).flat();
+      setAllProducts(products);
 
-  const loading = !featuredProductIds || !allProductsData;
-  const error = featuredError || productsError;
-
-  // Mostrar notificación
-  const showNotification = (message, type) => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification({ message: '', type: '' });
-    }, 3000);
+      const featuredIds = featuredRes.data;
+      const featured = products.filter(p => featuredIds.includes(p.id));
+      setFeaturedProducts(featured);
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error loading products:', err);
+      setError('Error al cargar los productos');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Añadir un producto a la colección destacada
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: '', type: '' }), 3000);
+  };
+
   const addToFeatured = async () => {
     if (!productId) {
       showNotification('Por favor, introduce un ID de producto válido', 'error');
       return;
     }
-    
+
     try {
       const numericId = parseInt(productId, 10);
       const productToAdd = allProducts.find(p => p.id === numericId);
-      
+
       if (!productToAdd) {
         showNotification('El producto con ese ID no existe', 'error');
         return;
       }
-      
-      if (featuredProductIds.includes(numericId)) {
+
+      if (featuredProducts.some(p => p.id === numericId)) {
         showNotification('Este producto ya está en la colección destacada', 'error');
         return;
       }
 
-      // Actualizar optimistamente
-      mutate('/api/featured-products', [...featuredProductIds, numericId], false);
-      
-      // Hacer la llamada a la API
-      await axios.post('/api/featured-products', { productId: numericId });
-      
-      // Revalidar los datos
-      mutate('/api/featured-products');
-      
-      setProductId('');
+      // Actualizar UI inmediatamente
+      setFeaturedProducts(prev => [...prev, productToAdd]);
       showNotification('Producto añadido a la colección destacada', 'success');
+
+      // Actualizar backend
+      await axios.post('/api/featured-products', { productId: numericId });
+      setProductId('');
     } catch (err) {
       console.error('Error al añadir producto:', err);
-      // Revalidar para asegurar que tenemos los datos correctos
-      mutate('/api/featured-products');
+      // Revertir cambios en caso de error
+      await loadProducts();
       showNotification('Error al añadir el producto', 'error');
     }
   };
 
-  // Eliminar un producto de la colección destacada
   const removeFromFeatured = async (id) => {
     try {
       const numericId = parseInt(id, 10);
       
-      // Actualizar optimistamente
-      mutate(
-        '/api/featured-products',
-        featuredProductIds.filter(pid => pid !== numericId),
-        false
-      );
+      // Actualizar UI inmediatamente
+      setFeaturedProducts(prev => prev.filter(p => p.id !== numericId));
+      showNotification('Producto eliminado de la colección destacada', 'success');
 
-      // Hacer la llamada a la API
-      await axios.delete('/api/featured-products', { 
+      // Actualizar backend
+      await axios.delete('/api/featured-products', {
         data: { productId: numericId }
       });
-      
-      // Revalidar los datos
-      mutate('/api/featured-products');
-      
-      showNotification('Producto eliminado de la colección destacada', 'success');
     } catch (err) {
       console.error('Error al eliminar producto:', err);
-      // Revalidar para asegurar que tenemos los datos correctos
-      mutate('/api/featured-products');
-      showNotification(
-        err.response?.data?.message || 'Error al eliminar el producto', 
-        'error'
-      );
+      // Revertir cambios en caso de error
+      await loadProducts();
+      showNotification('Error al eliminar el producto', 'error');
     }
   };
 
@@ -127,7 +123,6 @@ const FeaturedCollection = () => {
         Gestiona los productos que aparecen en el carousel de la página principal
       </p>
       
-      {/* Notificación */}
       <AnimatePresence>
         {notification.message && (
           <motion.div
@@ -145,7 +140,6 @@ const FeaturedCollection = () => {
         )}
       </AnimatePresence>
       
-      {/* Formulario para añadir producto */}
       <div className="flex items-center mb-6">
         <div className="flex-1 mr-4">
           <label htmlFor="productId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -174,7 +168,6 @@ const FeaturedCollection = () => {
         </button>
       </div>
       
-      {/* Vista previa del carousel */}
       {previewMode && featuredProducts.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Vista Previa del Carousel</h3>
@@ -219,7 +212,6 @@ const FeaturedCollection = () => {
         </div>
       )}
       
-      {/* Lista de productos destacados */}
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Productos en la Colección Destacada</h3>
       {loading ? (
         <div className="flex justify-center items-center py-12">
@@ -227,7 +219,7 @@ const FeaturedCollection = () => {
         </div>
       ) : error ? (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 dark:bg-red-900 dark:text-red-300 dark:border-red-800">
-          {error.message}
+          {error}
         </div>
       ) : featuredProducts.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
