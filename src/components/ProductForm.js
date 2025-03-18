@@ -10,7 +10,8 @@ const ProductForm = ({ onProductAdded }) => {
     rating: 5,
     image: "",
     sizes: [],
-    currency: "ARS" // Siempre en pesos argentinos
+    currency: "ARS", // Siempre en pesos argentinos
+    customId: "" // Nuevo campo para ID personalizado
   });
   
   const [loading, setLoading] = useState(false);
@@ -27,6 +28,17 @@ const ProductForm = ({ onProductAdded }) => {
   
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validación especial para customId: solo números y máximo 4 dígitos
+    if (name === "customId") {
+      const numericValue = value.replace(/[^0-9]/g, '').slice(0, 4);
+      setFormData({
+        ...formData,
+        [name]: numericValue
+      });
+      return;
+    }
+    
     setFormData({
       ...formData,
       [name]: name === "price" || name === "rating" ? parseFloat(value) : value
@@ -130,6 +142,11 @@ const ProductForm = ({ onProductAdded }) => {
         throw new Error("Por favor agregue al menos un talle");
       }
       
+      // Validar ID personalizado
+      if (formData.customId && formData.customId.length !== 4) {
+        throw new Error("El ID personalizado debe tener exactamente 4 dígitos");
+      }
+      
       // Asegurarse de que la moneda sea siempre ARS
       const productData = {
         ...formData,
@@ -160,7 +177,8 @@ const ProductForm = ({ onProductAdded }) => {
         rating: 5,
         image: "",
         sizes: [],
-        currency: "ARS"
+        currency: "ARS",
+        customId: "" // Resetear también el ID personalizado
       });
       setPreviewImage(null);
       
@@ -307,6 +325,25 @@ const ProductForm = ({ onProductAdded }) => {
               step="1"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
+          </div>
+          
+          {/* ID personalizado */}
+          <div>
+            <label htmlFor="customId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              ID Personalizado
+            </label>
+            <input
+              type="text"
+              id="customId"
+              name="customId"
+              value={formData.customId}
+              onChange={handleChange}
+              maxLength="4"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Debe ser numérico y tener exactamente 4 dígitos
+            </p>
           </div>
         </div>
         

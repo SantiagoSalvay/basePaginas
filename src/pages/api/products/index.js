@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { addProduct, getAllProducts, removeProduct, updateProduct } from "../../../utils/productStore";
+import { addProduct, getAllProducts, removeProduct, updateProduct, customIdExists } from "../../../utils/productStore";
 import { staticProducts } from "../../../utils/staticProducts";
 
 // Verificar si un producto es estático (ID en rangos específicos)
@@ -71,6 +71,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "El producto debe tener al menos un talle" });
       }
       
+      // Validar ID personalizado si se proporciona
+      if (product.customId) {
+        if (product.customId.length !== 4 || !/^\d{4}$/.test(product.customId)) {
+          return res.status(400).json({ error: "El ID personalizado debe ser numérico y tener exactamente 4 dígitos" });
+        }
+        
+        const customId = parseInt(product.customId, 10);
+        
+        // Verificar si el ID personalizado ya existe
+        if (customIdExists(customId)) {
+          return res.status(400).json({ error: `El ID ${customId} ya está en uso. Por favor, elija otro ID.` });
+        }
+        
+        // Verificar si el ID personalizado entra en conflicto con productos estáticos
+        if (isStaticProduct(customId)) {
+          return res.status(400).json({ error: `El ID ${customId} está reservado para productos estáticos. Por favor, elija otro ID.` });
+        }
+      }
+      
       // Forzar la moneda a ARS
       product.currency = "ARS";
 
@@ -78,7 +97,7 @@ export default async function handler(req, res) {
       return res.status(201).json(newProduct);
     } catch (error) {
       console.error("Error al crear producto:", error);
-      return res.status(500).json({ error: "Error al crear el producto" });
+      return res.status(500).json({ error: error.message || "Error al crear el producto" });
     }
   }
 

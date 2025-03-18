@@ -18,22 +18,48 @@ const getProductsByCategory = (category) => {
   return products[category] || [];
 };
 
+// Verificar si un ID personalizado ya existe
+const customIdExists = (customId) => {
+  if (!customId) return false;
+  
+  // Convertir a número para comparación
+  const numericId = parseInt(customId, 10);
+  
+  // Buscar en todas las categorías
+  return Object.values(products).flat().some(p => p.id === numericId);
+};
+
 // Añadir un nuevo producto
 const addProduct = (product) => {
   if (!products[product.category]) {
     products[product.category] = [];
   }
   
-  // Generar un ID único que no entre en conflicto con los productos estáticos
-  // Los productos estáticos usan IDs en rangos específicos (1001-1999, 2001-2999, etc.)
-  // Usaremos IDs en el rango 10000+ para los productos dinámicos
-  const newId = Math.max(
-    10000, // Empezar desde 10000 para evitar conflictos con productos estáticos
-    ...Object.values(products).flat().map(p => p.id || 0)
-  ) + 1;
+  let newId;
+  
+  // Si se proporciona un ID personalizado de 4 dígitos, usarlo
+  if (product.customId && product.customId.length === 4) {
+    newId = parseInt(product.customId, 10);
+    
+    // Verificar si el ID ya existe
+    if (customIdExists(newId)) {
+      throw new Error(`El ID ${newId} ya está en uso. Por favor, elija otro ID.`);
+    }
+  } else {
+    // Generar un ID único que no entre en conflicto con los productos estáticos
+    // Los productos estáticos usan IDs en rangos específicos (1001-1999, 2001-2999, etc.)
+    // Usaremos IDs en el rango 10000+ para los productos dinámicos
+    newId = Math.max(
+      10000, // Empezar desde 10000 para evitar conflictos con productos estáticos
+      ...Object.values(products).flat().map(p => p.id || 0)
+    ) + 1;
+  }
+  
+  // Eliminar el campo customId antes de guardar
+  const { customId, ...productData } = product;
   
   const newProduct = {
-    ...product,
+    ...productData,
     id: newId
   };
   
@@ -95,5 +121,6 @@ export {
   getProductsByCategory,
   addProduct,
   removeProduct,
-  updateProduct
+  updateProduct,
+  customIdExists
 };

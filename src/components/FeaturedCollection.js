@@ -76,7 +76,7 @@ const FeaturedCollection = () => {
       console.error('Error al añadir producto:', err);
       // Revertir cambios en caso de error
       await loadProducts();
-      showNotification('Error al añadir el producto', 'error');
+      showNotification(err.response?.data?.error || 'Error al añadir el producto', 'error');
     }
   };
 
