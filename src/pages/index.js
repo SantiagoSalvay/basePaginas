@@ -34,23 +34,44 @@ export default function Home() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/products');
         
-        // Obtener 4 productos destacados aleatoriamente de diferentes categorías
-        const allProducts = [];
-        Object.keys(response.data).forEach(category => {
-          if (response.data[category] && response.data[category].length > 0) {
-            allProducts.push(...response.data[category]);
+        // Obtener productos destacados de la API
+        const featuredResponse = await axios.get('/api/featured-products');
+        const featuredIds = featuredResponse.data;
+        
+        // Si no hay productos destacados, seleccionar algunos aleatorios
+        if (featuredIds.length === 0) {
+          const response = await axios.get('/api/products');
+          
+          // Obtener productos aleatorios de diferentes categorías
+          const allProducts = [];
+          Object.keys(response.data).forEach(category => {
+            if (response.data[category] && response.data[category].length > 0) {
+              allProducts.push(...response.data[category]);
+            }
+          });
+          
+          // Si hay productos disponibles, seleccionar 4 aleatoriamente
+          if (allProducts.length > 0) {
+            // Mezclar el array de productos
+            const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
+            // Tomar hasta 4 productos
+            const selected = shuffled.slice(0, Math.min(4, shuffled.length));
+            setFeaturedProducts(selected);
           }
-        });
-        
-        // Si hay productos disponibles, seleccionar 4 aleatoriamente
-        if (allProducts.length > 0) {
-          // Mezclar el array de productos
-          const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
-          // Tomar hasta 4 productos
-          const selected = shuffled.slice(0, Math.min(4, shuffled.length));
-          setFeaturedProducts(selected);
+        } else {
+          // Obtener todos los productos
+          const response = await axios.get('/api/products');
+          const allProducts = [];
+          Object.keys(response.data).forEach(category => {
+            if (response.data[category] && response.data[category].length > 0) {
+              allProducts.push(...response.data[category]);
+            }
+          });
+          
+          // Filtrar los productos destacados por ID
+          const featured = allProducts.filter(product => featuredIds.includes(product.id));
+          setFeaturedProducts(featured);
         }
         
         setLoading(false);
@@ -152,10 +173,11 @@ export default function Home() {
                 <div 
                   className="flex gap-8 animate-carousel hover:pause-animation"
                   style={{
-                    width: `${featuredProducts.length * 320}px`
+                    width: `${featuredProducts.length * 3 * 320}px`
                   }}
                 >
-                  {[...featuredProducts, ...featuredProducts].map((product, index) => (
+                  {/* Triplicamos los productos para crear un efecto de loop infinito sin saltos */}
+                  {[...featuredProducts, ...featuredProducts, ...featuredProducts].map((product, index) => (
                     <div 
                       key={`${product.id}-${index}`} 
                       className="w-[300px] flex-shrink-0 carousel-item"

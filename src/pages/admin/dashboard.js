@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign } from "react-icons/fi";
+import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar } from "react-icons/fi";
 
 // Componentes
 import Navbar from "../../components/Navbar";
@@ -10,6 +10,7 @@ import AdminProtected from "../../components/AdminProtected";
 import ProductForm from "../../components/ProductForm";
 import ProductList from "../../components/ProductList";
 import AnimatedSection from "../../components/AnimatedSection";
+import FeaturedCollection from "../../components/FeaturedCollection";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -276,13 +277,24 @@ export default function AdminDashboard() {
                 <FiList className="mr-2" />
                 Gestionar Productos
               </button>
+              <button
+                onClick={() => setActiveTab("featured")}
+                className={`py-4 px-6 text-sm font-medium flex items-center ${
+                  activeTab === "featured"
+                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <FiStar className="mr-2" />
+                Colección Destacada
+              </button>
             </div>
 
             {/* Contenido de las tabs */}
             <AnimatedSection animation="fadeIn">
               {activeTab === "add" ? (
                 <ProductForm onProductAdded={handleProductAdded} />
-              ) : (
+              ) : activeTab === "list" ? (
                 <>
                   {loading ? (
                     <div className="flex justify-center items-center py-12">
@@ -300,6 +312,8 @@ export default function AdminDashboard() {
                     />
                   )}
                 </>
+              ) : (
+                <FeaturedCollection />
               )}
             </AnimatedSection>
           </div>
