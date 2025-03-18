@@ -6,7 +6,6 @@ import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign } fro
 
 // Componentes
 import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 import AdminProtected from "../../components/AdminProtected";
 import ProductForm from "../../components/ProductForm";
 import ProductList from "../../components/ProductList";
@@ -305,8 +304,6 @@ export default function AdminDashboard() {
             </AnimatedSection>
           </div>
         </main>
-
-        <Footer />
       </div>
     </AdminProtected>
   );
