@@ -1,6 +1,42 @@
-import { connectToDatabase } from "../../../utils/mongodb";
-import { ObjectId } from "mongodb";
 import nodemailer from "nodemailer";
+import fs from 'fs';
+import path from 'path';
+
+// Local storage path for users
+const USERS_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
+
+// Helper function to read users
+const getUsers = () => {
+  try {
+    if (!fs.existsSync(USERS_FILE_PATH)) {
+      // Create directory if it doesn't exist
+      const dir = path.dirname(USERS_FILE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify([]));
+      return [];
+    }
+    const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading users file:', error);
+    return [];
+  }
+};
+
+// Helper function to write users
+const saveUsers = (users) => {
+  try {
+    const dir = path.dirname(USERS_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2));
+  } catch (error) {
+    console.error('Error writing users file:', error);
+  }
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,26 +54,25 @@ export default async function handler(req, res) {
     const verificationToken = Math.random().toString(36).substring(2, 15) + 
                              Math.random().toString(36).substring(2, 15);
     
-    // Guardar el token en la base de datos
-    const { db } = await connectToDatabase();
+    // Get users from local storage
+    const users = getUsers();
     
     // Buscar si el usuario ya existe
-    const existingUser = await db.collection('users').findOne({ email });
+    const existingUserIndex = users.findIndex(user => user.email === email);
     
-    if (!existingUser) {
+    if (existingUserIndex === -1) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
     
     // Actualizar el usuario con el token de verificación
-    await db.collection('users').updateOne(
-      { _id: ObjectId(existingUser._id) },
-      { 
-        $set: { 
-          verificationToken,
-          emailVerified: false
-        } 
-      }
-    );
+    users[existingUserIndex] = {
+      ...users[existingUserIndex],
+      verificationToken,
+      emailVerified: false
+    };
+    
+    // Save updated users
+    saveUsers(users);
     
     // Enviar correo de verificación
     await sendVerificationEmail(email, verificationToken);
