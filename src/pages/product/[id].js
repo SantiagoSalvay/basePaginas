@@ -305,26 +305,25 @@ const ProductDetail = () => {
               </div>
               
               {/* Botones de acción */}
-              <div className="flex items-center space-x-2 mb-6">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <div className="flex space-x-4 mt-4">
+                <button
                   onClick={handleAddToCart}
-                  className="hero-button primary-button flex-grow"
+                  className="flex-1 py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center"
                 >
-                  <FiShoppingBag className="mr-2" />
-                  {t('addToCart')}
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  <span className="mr-2">
+                    <FiShoppingBag />
+                  </span>
+                  Agregar al Carrito
+                </button>
+                <button
                   onClick={handleFavoriteToggle}
-                  className={`hero-button secondary-button p-3 ${isFavorite ? 'bg-red-50 text-red-600 border-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border-red-400' : ''}`}
-                  aria-label={isFavorite ? t('removeFromWishlist') : t('addToWishlist')}
+                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center"
                 >
-                  <FiHeart size={20} />
-                </motion.button>
+                  <span className="mr-2">
+                    <FiHeart />
+                  </span>
+                  Favorito
+                </button>
               </div>
               
               {/* Información adicional */}
