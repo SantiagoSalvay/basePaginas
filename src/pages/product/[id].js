@@ -11,6 +11,8 @@ import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import PageTransition from '../../components/PageTransition';
 import axios from 'axios';
+import { useCart } from '../../context/CartContext';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const ProductDetail = () => {
   const router = useRouter();
@@ -22,6 +24,8 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { data: session } = useSession();
+  const { addToCart } = useCart();
+  const { t } = useCurrency();
 
   useEffect(() => {
     if (id) {
@@ -67,9 +71,9 @@ const ProductDetail = () => {
     }
   };
 
-  const addToCart = () => {
+  const handleAddToCart = () => {
     if (!session) {
-      toast.info("Debes iniciar sesión para agregar productos al carrito", {
+      toast.info(t('loginRequired'), {
         position: "top-center",
         autoClose: 3000,
       });
@@ -85,11 +89,14 @@ const ProductDetail = () => {
       return;
     }
 
-    // Aquí iría la lógica para agregar al carrito
-    toast.success(`${product.name} agregado al carrito`, {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    const success = addToCart(product, quantity, selectedSize);
+    
+    if (success) {
+      toast.success(`${product.name} ${t('addToCart').toLowerCase()}`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
   };
 
   const addToFavorites = () => {
@@ -280,11 +287,11 @@ const ProductDetail = () => {
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={addToCart}
+                  onClick={handleAddToCart}
                   className="hero-button primary-button flex items-center justify-center"
                 >
                   <FiShoppingBag className="mr-2" />
-                  Agregar al carrito
+                  {t('addToCart')}
                 </motion.button>
                 <motion.button 
                   whileHover={{ scale: 1.05 }}

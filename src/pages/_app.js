@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { ToastContainer } from "react-toastify";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import { FeaturedProductsProvider } from '../context/FeaturedProductsContext';
+import { CartProvider } from '../context/CartContext';
 import "react-toastify/dist/ReactToastify.css";
 import "../styles/globals.css";
 
@@ -16,23 +17,25 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, router }) {
     >
       <ThemeProvider attribute="class">
         <CurrencyProvider>
-          <FeaturedProductsProvider>
-            <AnimatePresence mode="wait" initial={false}>
-              <Component {...pageProps} key={router.route} />
-            </AnimatePresence>
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="colored"
-            />
-          </FeaturedProductsProvider>
+          <CartProvider>
+            <FeaturedProductsProvider>
+              <AnimatePresence mode="wait" initial={false}>
+                <Component {...pageProps} key={router.route} />
+              </AnimatePresence>
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+              />
+            </FeaturedProductsProvider>
+          </CartProvider>
         </CurrencyProvider>
       </ThemeProvider>
     </SessionProvider>

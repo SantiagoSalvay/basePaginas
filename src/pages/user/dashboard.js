@@ -12,6 +12,7 @@ import PageTransition from '../../components/PageTransition';
 const UserDashboard = () => {
   const { data: session } = useSession();
   const router = useRouter();
+  const { tab } = router.query;
 
   const [userInfo, setUserInfo] = useState({
     name: '',
@@ -39,7 +40,20 @@ const UserDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile'); // profile, favorites, purchases
+  const [activeTab, setActiveTab] = useState('profile'); // profile, favorites, cart
+
+  // Inicializar activeTab desde localStorage o desde query params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTab = localStorage.getItem("activeTab");
+      if (savedTab) {
+        setActiveTab(savedTab);
+        localStorage.removeItem("activeTab"); // Limpiar después de usar
+      } else if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, [tab]);
 
   // Datos de ejemplo - en producción estos vendrían de API o estado global
   const favoriteProducts = []; // Array vacío para demostrar el mensaje de "No hay productos"

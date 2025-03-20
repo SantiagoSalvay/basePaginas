@@ -7,12 +7,14 @@ import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import { convertPrice, formatPrice } from "../utils/currencyUtils";
 import { useCurrency } from "../context/CurrencyContext";
+import { useCart } from "../context/CartContext";
 
 const ProductCard = ({ product }) => {
   const { name, price, image, category, id, sizes = [], currency = "ARS" } = product;
   const { data: session } = useSession();
   const router = useRouter();
   const { currency: selectedCurrency, t } = useCurrency();
+  const { addToCart } = useCart();
 
   // Función para determinar la URL de la imagen
   const getImageUrl = (imageUrl) => {
@@ -27,7 +29,7 @@ const ProductCard = ({ product }) => {
   // Función para verificar si el usuario está autenticado
   const checkAuthentication = (action) => {
     if (!session) {
-      toast.info(t('login'), {
+      toast.info(t('loginRequired'), {
         position: "top-center",
         autoClose: 3000,
       });
@@ -38,18 +40,25 @@ const ProductCard = ({ product }) => {
   };
 
   // Función para agregar al carrito
-  const addToCart = () => {
+  const handleAddToCart = (e) => {
+    e.stopPropagation(); // Evitar que el clic se propague al contenedor
+    
     if (checkAuthentication("carrito")) {
-      // Aquí iría la lógica para agregar al carrito
-      toast.success(`${name} ${t('addToCart').toLowerCase()}`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      const success = addToCart(product, 1);
+      
+      if (success) {
+        toast.success(`${name} ${t('addToCart').toLowerCase()}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
     }
   };
 
   // Función para agregar a favoritos
-  const addToFavorites = () => {
+  const addToFavorites = (e) => {
+    e.stopPropagation(); // Evitar que el clic se propague al contenedor
+    
     if (checkAuthentication("favoritos")) {
       // Aquí iría la lógica para agregar a favoritos
       toast.success(`${name} ${t('addToWishlist').toLowerCase()}`, {
@@ -84,7 +93,7 @@ const ProductCard = ({ product }) => {
             <button
               className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
               aria-label={t('addToCart')}
-              onClick={addToCart}
+              onClick={handleAddToCart}
             >
               <FiShoppingBag className="text-primary-600" size={20} />
             </button>

@@ -3,17 +3,22 @@ import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiSun, FiMoon, FiMenu, FiX, FiUser } from "react-icons/fi";
+import { FiSun, FiMoon, FiMenu, FiX, FiUser, FiShoppingCart } from "react-icons/fi";
 import CurrencySelector from "./CurrencySelector";
 import { useCurrency } from "../context/CurrencyContext";
+import { useCart } from "../context/CartContext";
+import { useRouter } from "next/router";
+import { toast } from "react-toastify";
 
 const Navbar = () => {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { t } = useCurrency();
+  const { cartCount } = useCart();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
   // Evitar problemas de hidratación
   useEffect(() => {
@@ -135,6 +140,41 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* Currency Selector */}
             <CurrencySelector />
+            
+            {/* Shopping Cart */}
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => {
+                if (session) {
+                  router.push("/user/dashboard");
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("activeTab", "cart");
+                  }
+                } else {
+                  toast.info(t('loginRequired'), {
+                    position: "top-center",
+                    autoClose: 3000,
+                  });
+                  signIn();
+                }
+              }}
+            >
+              <button
+                className={`p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${
+                  scrolled || theme === "dark"
+                    ? "text-gray-800 dark:text-white"
+                    : "text-white"
+                }`}
+                aria-label={t('cart')}
+              >
+                <FiShoppingCart size={20} />
+              </button>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </div>
             
             {/* Theme Toggle */}
             <button
@@ -267,6 +307,33 @@ const Navbar = () => {
                     {t('contact')}
                   </span>
                 </Link>
+                
+                <div 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (session) {
+                      router.push("/user/dashboard");
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("activeTab", "cart");
+                      }
+                    } else {
+                      toast.info(t('loginRequired'), {
+                        position: "top-center",
+                        autoClose: 3000,
+                      });
+                      signIn();
+                    }
+                  }}
+                  className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors flex items-center cursor-pointer"
+                >
+                  <FiShoppingCart className="mr-2" />
+                  {t('cart')}
+                  {cartCount > 0 && (
+                    <span className="ml-2 bg-primary-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </div>
                 
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col space-y-4">
