@@ -155,3 +155,5 @@ Este proyecto está bajo la Licencia MIT.
 ---
 
 Para más información, consulta la documentación de Next.js y NextAuth.
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1e4ff948-d932-4b15-b40f-790701f338f5/deploy-status)](https://app.netlify.com/sites/modsvista/deploys)
