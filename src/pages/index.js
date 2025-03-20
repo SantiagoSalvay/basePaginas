@@ -224,7 +224,9 @@ export default function Home() {
                 <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">ModaVista nació de la pasión por el diseño y la moda sostenible. Fundada en 2020 por un grupo de diseñadores visionarios, nuestra misión es crear prendas que combinen estilo, calidad y responsabilidad.</p>
                 <p className="text-lg text-gray-700 dark:text-gray-300 mb-6">Cada colección es el resultado de un meticuloso proceso creativo, donde la innovación y la tradición se encuentran para dar vida a diseños únicos que reflejan la personalidad de quienes los visten.</p>
                 <p className="text-lg text-gray-700 dark:text-gray-300 mb-10">Trabajamos con materiales de primera calidad y procesos de producción éticos, garantizando que cada prenda no solo luzca excepcional, sino que también respete nuestro compromiso con el planeta y las comunidades.</p>
-                <button className="hero-button primary-button">Conoce Más</button>
+                <Link href="/nosotros">
+                  <button className="hero-button primary-button">Conoce Más</button>
+                </Link>
               </AnimatedSection>
             </div>
           </div>
