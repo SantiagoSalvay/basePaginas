@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { convertPrice, formatPrice } from "../utils/currencyUtils";
 import { useCurrency } from "../context/CurrencyContext";
 import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
 
 const ProductCard = ({ product }) => {
   const { name, price, image, category, id, sizes = [], currency = "ARS" } = product;
@@ -15,6 +16,13 @@ const ProductCard = ({ product }) => {
   const router = useRouter();
   const { currency: selectedCurrency, t } = useCurrency();
   const { addToCart } = useCart();
+  const { addToFavorites, isInFavorites, removeFromFavorites } = useFavorites();
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Verificar si el producto está en favoritos al cargar
+  useEffect(() => {
+    setIsFavorite(isInFavorites(id));
+  }, [id, isInFavorites]);
 
   // Función para determinar la URL de la imagen
   const getImageUrl = (imageUrl) => {
@@ -56,15 +64,27 @@ const ProductCard = ({ product }) => {
   };
 
   // Función para agregar a favoritos
-  const addToFavorites = (e) => {
+  const handleFavoriteToggle = (e) => {
     e.stopPropagation(); // Evitar que el clic se propague al contenedor
     
     if (checkAuthentication("favoritos")) {
-      // Aquí iría la lógica para agregar a favoritos
-      toast.success(`${name} ${t('addToWishlist').toLowerCase()}`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      if (isFavorite) {
+        removeFromFavorites(id);
+        setIsFavorite(false);
+        toast.success(`${name} ${t('removedFromWishlist').toLowerCase()}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        const success = addToFavorites(product);
+        if (success) {
+          setIsFavorite(true);
+          toast.success(`${name} ${t('addToWishlist').toLowerCase()}`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+        }
+      }
     }
   };
 
@@ -98,11 +118,11 @@ const ProductCard = ({ product }) => {
               <FiShoppingBag className="text-primary-600" size={20} />
             </button>
             <button
-              className="p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors"
-              aria-label={t('addToWishlist')}
-              onClick={addToFavorites}
+              className={`p-3 bg-white rounded-full shadow-lg hover:bg-primary-50 transition-colors ${isFavorite ? 'text-red-500' : 'text-primary-600'}`}
+              aria-label={isFavorite ? t('removeFromWishlist') : t('addToWishlist')}
+              onClick={handleFavoriteToggle}
             >
-              <FiHeart className="text-primary-600" size={20} />
+              <FiHeart className={isFavorite ? "text-red-500" : "text-primary-600"} size={20} />
             </button>
           </div>
         </div>

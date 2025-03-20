@@ -148,6 +148,7 @@ export const translations = {
     hours: 'horas',
     minutes: 'minutos',
     seconds: 'segundos',
+    removedFromWishlist: 'Eliminado de Favoritos',
   },
   
   en: {
@@ -265,6 +266,7 @@ export const translations = {
     hours: 'hours',
     minutes: 'minutes',
     seconds: 'seconds',
+    removedFromWishlist: 'Removed from Wishlist',
   },
   
   pt: {
@@ -382,6 +384,7 @@ export const translations = {
     hours: 'horas',
     minutes: 'minutos',
     seconds: 'segundos',
+    removedFromWishlist: 'Removido dos Favoritos',
   },
 };
 

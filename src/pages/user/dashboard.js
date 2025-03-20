@@ -10,12 +10,15 @@ import Head from 'next/head';
 import PageTransition from '../../components/PageTransition';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useFavorites } from '../../context/FavoritesContext';
+import { toast } from 'react-toastify';
 
 const UserDashboard = () => {
   const { data: session } = useSession();
   const router = useRouter();
   const { tab } = router.query;
-  const { cartItems, removeFromCart, updateQuantity, getSubtotal, cartTotal } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, getSubtotal, cartTotal, addToCart } = useCart();
+  const { favoriteItems, removeFromFavorites } = useFavorites();
   const { t } = useCurrency();
 
   const [userInfo, setUserInfo] = useState({
@@ -58,9 +61,6 @@ const UserDashboard = () => {
       }
     }
   }, [tab]);
-
-  // Datos de ejemplo - en producción estos vendrían de API o estado global
-  const favoriteProducts = []; // Array vacío para demostrar el mensaje de "No hay productos"
 
   const handleChangeInfo = async () => {
     try {
@@ -193,8 +193,8 @@ const UserDashboard = () => {
             <span className="text-primary-600 dark:text-primary-400">Mi Perfil</span>
           </nav>
 
-          {/* Mensajes de éxito o error */}
-          {error && (
+        {/* Mensajes de éxito o error */}
+        {error && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -204,7 +204,7 @@ const UserDashboard = () => {
             </motion.div>
           )}
           
-          {success && (
+        {success && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -306,90 +306,90 @@ const UserDashboard = () => {
                         </motion.button>
                       )}
                     </div>
-                    
-                    {!changePassword ? (
+          
+          {!changePassword ? (
                       <div className="space-y-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                          <input
-                            type="text"
-                            value={userInfo.name}
-                            onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={userInfo.name}
+                  onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
                             className="input-field"
-                          />
-                        </div>
+                />
+              </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo Electrónico</label>
-                          <input
-                            type="email"
-                            value={userInfo.email}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo Electrónico</label>
+                <input
+                  type="email"
+                  value={userInfo.email}
                             disabled
                             className="input-field bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">El correo electrónico no se puede modificar</p>
-                        </div>
+                />
+                <p className="text-xs text-gray-500 mt-1">El correo electrónico no se puede modificar</p>
+              </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
-                          <input
-                            type="tel"
-                            value={userInfo.phone}
-                            onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                <input
+                  type="tel"
+                  value={userInfo.phone}
+                  onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })}
                             className="input-field"
                             placeholder="+54 (11) 1234-5678"
-                          />
-                        </div>
+                />
+              </div>
                         
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={handleChangeInfo}
-                          disabled={loading}
+                  onClick={handleChangeInfo}
+                  disabled={loading}
                           className="hero-button primary-button flex items-center justify-center"
-                        >
+                >
                           <FiEdit className="mr-2" />
-                          {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  {loading ? 'Guardando...' : 'Guardar Cambios'}
                         </motion.button>
-                      </div>
-                    ) : (
+              </div>
+          ) : (
                       <div className="space-y-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña Actual</label>
-                          <input
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña Actual</label>
+                <input
                             type="password"
-                            value={passwordData.currentPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                             className="input-field"
-                          />
-                        </div>
+                />
+              </div>
                         
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva Contraseña</label>
-                          <input
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva Contraseña</label>
+                <input
                             type="password"
-                            value={passwordData.newPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                             className="input-field"
-                          />
-                        </div>
+                />
+              </div>
                         
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar Contraseña</label>
-                          <input
+                <input
                             type="password"
-                            value={passwordData.confirmPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                             className="input-field"
-                          />
-                        </div>
+                />
+              </div>
                         
                         <div className="flex flex-wrap gap-3">
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={handleChangePasswordSubmit}
-                            disabled={loading}
+                  onClick={handleChangePasswordSubmit}
+                  disabled={loading}
                             className="hero-button primary-button"
                           >
                             {loading ? 'Guardando...' : 'Cambiar Contraseña'}
@@ -398,10 +398,10 @@ const UserDashboard = () => {
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setChangePassword(false)}
+                  onClick={() => setChangePassword(false)}
                             className="hero-button secondary-button"
-                          >
-                            Cancelar
+                >
+                  Cancelar
                           </motion.button>
                         </div>
                       </div>
@@ -416,15 +416,23 @@ const UserDashboard = () => {
                   <div className="p-6">
                     <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-6">Mis Favoritos</h2>
                     
-                    {favoriteProducts.length > 0 ? (
+                    {favoriteItems.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {favoriteProducts.map((product) => (
+                        {favoriteItems.map((product) => (
                           <motion.div
                             key={product.id}
                             whileHover={{ y: -5, scale: 1.02 }}
                             transition={{ duration: 0.2 }}
-                            className="card h-full flex flex-col"
+                            className="card h-full flex flex-col relative"
                           >
+                            <button 
+                              onClick={() => removeFromFavorites(product.id)}
+                              className="absolute top-2 right-2 p-1.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 z-10"
+                              aria-label="Eliminar de favoritos"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                            
                             <Link href={`/product/${product.id}`}>
                               <div className="relative h-48 w-full overflow-hidden">
                                 <Image 
@@ -437,12 +445,19 @@ const UserDashboard = () => {
                               </div>
                               <div className="p-4 flex flex-col flex-grow">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">{product.name}</h3>
+                                
+                                {product.size && (
+                                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                    Talla: {product.size}
+                                  </p>
+                                )}
+                                
                                 <div className="flex mt-1 mb-2">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <svg
                                       key={star}
                                       className={`w-4 h-4 ${
-                                        star <= product.rating ? "text-yellow-500" : "text-gray-300"
+                                        star <= (product.rating || 4) ? "text-yellow-500" : "text-gray-300"
                                       }`}
                                       fill="currentColor"
                                       viewBox="0 0 20 20"
@@ -452,6 +467,24 @@ const UserDashboard = () => {
                                   ))}
                                 </div>
                                 <p className="text-primary-600 dark:text-primary-400 font-bold mt-auto">${product.price.toFixed(2)}</p>
+                                
+                                <button 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const success = addToCart(product, 1);
+                                    if (success) {
+                                      toast.success(`${product.name} ${t('addToCart').toLowerCase()}`, {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                      });
+                                    }
+                                  }}
+                                  className="mt-3 py-1.5 px-3 bg-primary-600 text-white text-sm rounded-md hover:bg-primary-700 transition-colors"
+                                >
+                                  <FiShoppingBag className="inline mr-1" size={14} />
+                                  {t('addToCart')}
+                                </button>
                               </div>
                             </Link>
                           </motion.div>
@@ -574,8 +607,8 @@ const UserDashboard = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
-          </div>
+      </motion.div>
+    </div>
         </div>
       </div>
     </PageTransition>

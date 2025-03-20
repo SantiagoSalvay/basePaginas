@@ -13,6 +13,7 @@ import PageTransition from '../../components/PageTransition';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useFavorites } from "../../context/FavoritesContext";
 
 const ProductDetail = () => {
   const router = useRouter();
@@ -26,6 +27,8 @@ const ProductDetail = () => {
   const { data: session } = useSession();
   const { addToCart } = useCart();
   const { t } = useCurrency();
+  const { addToFavorites, removeFromFavorites, isInFavorites } = useFavorites();
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -64,6 +67,13 @@ const ProductDetail = () => {
     }
   }, [id]);
 
+  // Verificar si el producto está en favoritos al cargar
+  useEffect(() => {
+    if (product) {
+      setIsFavorite(isInFavorites(product.id));
+    }
+  }, [product, isInFavorites]);
+
   const handleQuantityChange = (amount) => {
     const newQuantity = quantity + amount;
     if (newQuantity >= 1) {
@@ -99,9 +109,9 @@ const ProductDetail = () => {
     }
   };
 
-  const addToFavorites = () => {
+  const handleFavoriteToggle = () => {
     if (!session) {
-      toast.info("Debes iniciar sesión para agregar productos a favoritos", {
+      toast.info(t('loginRequired'), {
         position: "top-center",
         autoClose: 3000,
       });
@@ -109,11 +119,23 @@ const ProductDetail = () => {
       return;
     }
 
-    // Aquí iría la lógica para agregar a favoritos
-    toast.success(`${product.name} agregado a favoritos`, {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    if (isFavorite) {
+      removeFromFavorites(product.id);
+      setIsFavorite(false);
+      toast.success(`${product.name} ${t('removedFromWishlist').toLowerCase()}`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } else {
+      const success = addToFavorites(product);
+      if (success) {
+        setIsFavorite(true);
+        toast.success(`${product.name} ${t('addToWishlist').toLowerCase()}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    }
   };
 
   if (loading) return (
@@ -283,24 +305,25 @@ const ProductDetail = () => {
               </div>
               
               {/* Botones de acción */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <motion.button 
+              <div className="flex items-center space-x-2 mb-6">
+                <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleAddToCart}
-                  className="hero-button primary-button flex items-center justify-center"
+                  className="hero-button primary-button flex-grow"
                 >
                   <FiShoppingBag className="mr-2" />
                   {t('addToCart')}
                 </motion.button>
-                <motion.button 
+                
+                <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={addToFavorites}
-                  className="hero-button secondary-button flex items-center justify-center"
+                  onClick={handleFavoriteToggle}
+                  className={`hero-button secondary-button p-3 ${isFavorite ? 'bg-red-50 text-red-600 border-red-600 dark:bg-red-900/20 dark:text-red-400 dark:border-red-400' : ''}`}
+                  aria-label={isFavorite ? t('removeFromWishlist') : t('addToWishlist')}
                 >
-                  <FiHeart className="mr-2" />
-                  Agregar a favoritos
+                  <FiHeart size={20} />
                 </motion.button>
               </div>
               
