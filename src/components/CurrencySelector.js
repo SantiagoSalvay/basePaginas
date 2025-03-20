@@ -32,9 +32,34 @@ const CurrencySelector = () => {
     { code: 'BRL', name: currencyToName.BRL },
   ];
 
+  // Mapeo de divisas a idiomas
+  const currencyToLanguage = {
+    'ARS': 'es', // Español
+    'USD': 'en', // Inglés
+    'EUR': 'en', // Inglés
+    'PYG': 'es', // Español
+    'BRL': 'pt', // Portugués
+  };
+
+  // Función para cargar traducciones
+  const loadTranslations = (language) => {
+    fetch(`/translations/${language}.json`)
+      .then(response => response.json())
+      .then(translations => {
+        document.querySelectorAll('[data-translate-key]').forEach(element => {
+          const key = element.getAttribute('data-translate-key');
+          element.textContent = translations[key] || element.textContent;
+        });
+      });
+  };
+
   // Función para manejar la selección de moneda
   const handleCurrencyChange = (currencyCode) => {
     changeCurrency(currencyCode);
+    const language = currencyToLanguage[currencyCode];
+    if (language) {
+      loadTranslations(language);
+    }
     setIsOpen(false);
   };
 

@@ -61,11 +61,12 @@ const ProductCard = ({ product }) => {
 
   return (
     <motion.div
+      onClick={() => router.push(`/product/${id}`)}
       variants={{
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
       }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl card group relative"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl card group relative cursor-pointer"
     >
       <div className="relative h-80 w-full overflow-hidden">
         <Image

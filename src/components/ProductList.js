@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FiEdit, FiTrash2, FiStar, FiX, FiCheck, FiAlertTriangle } from "react-icons/fi";
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 
 const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   const [filter, setFilter] = useState("all");
@@ -10,6 +11,8 @@ const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
+  const { t } = useTranslation();
   
   // Obtener todas las categorías únicas
   const categories = ["all", ...new Set(Object.keys(products))];
@@ -38,7 +41,7 @@ const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   // Manejar la eliminación de un producto
   const handleDelete = async (id) => {
     if (isStaticProduct(id)) {
-      setError("No se pueden eliminar productos estáticos del catálogo");
+      setError(t('staticProductDeleteError'));
       setTimeout(() => setError(""), 3000);
       setIsDeleting(null);
       return;
@@ -54,10 +57,10 @@ const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Error al eliminar el producto");
+        throw new Error(data.error || t('productDeleteError'));
       }
       
-      setSuccess("Producto eliminado correctamente");
+      setSuccess(t('productDeletedSuccessfully'));
       
       // Notificar al componente padre
       if (onProductDeleted) {
@@ -79,7 +82,7 @@ const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   // Manejar la edición de un producto
   const handleEdit = (product) => {
     if (isStaticProduct(product.id)) {
-      setError("No se pueden editar productos estáticos del catálogo");
+      setError(t('staticProductEditError'));
       setTimeout(() => setError(""), 3000);
       return;
     }

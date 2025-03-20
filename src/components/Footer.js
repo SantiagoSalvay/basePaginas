@@ -11,8 +11,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Marca */}
           <div>
-            <h3 className="text-2xl font-display font-bold mb-4">ModaVista</h3>
-            <p className="text-gray-400 mb-6">
+            <h3 className="text-2xl font-display font-bold mb-4" data-translate-key="brandName">ModaVista</h3>
+            <p className="text-gray-400 mb-6" data-translate-key="brandDescription">
               Descubre la elegancia en cada detalle
             </p>
             <div className="flex space-x-4">
@@ -49,34 +49,26 @@ const Footer = () => {
 
           {/* Enlaces Rápidos */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Enlaces Rápidos</h4>
+            <h4 className="text-lg font-bold mb-4" data-translate-key="quickLinks">Enlaces Rápidos</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Inicio
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="home">Inicio</span>
                 </Link>
               </li>
               <li>
                 <Link href="/coleccion">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Productos
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="products">Productos</span>
                 </Link>
               </li>
               <li>
                 <Link href="/nosotros">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Nosotros
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="aboutUs">Nosotros</span>
                 </Link>
               </li>
               <li>
                 <Link href="/contacto">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Contacto
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="contact">Contacto</span>
                 </Link>
               </li>
             </ul>
@@ -84,27 +76,21 @@ const Footer = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Legal</h4>
+            <h4 className="text-lg font-bold mb-4" data-translate-key="legal">Legal</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/terminos">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Términos y Condiciones
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="terms">Términos y Condiciones</span>
                 </Link>
               </li>
               <li>
                 <Link href="/privacidad">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Política de Privacidad
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="privacyPolicy">Política de Privacidad</span>
                 </Link>
               </li>
               <li>
                 <Link href="/faq">
-                  <span className="text-gray-400 hover:text-white transition-colors">
-                    Preguntas Frecuentes
-                  </span>
+                  <span className="text-gray-400 hover:text-white transition-colors" data-translate-key="faq">Preguntas Frecuentes</span>
                 </Link>
               </li>
             </ul>
@@ -112,8 +98,8 @@ const Footer = () => {
 
           {/* Boletín */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Boletín Informativo</h4>
-            <p className="text-gray-400 mb-4">
+            <h4 className="text-lg font-bold mb-4" data-translate-key="newsletter">Boletín Informativo</h4>
+            <p className="text-gray-400 mb-4" data-translate-key="newsletterDescription">
               Suscríbete para recibir las últimas novedades y ofertas exclusivas
             </p>
             <form className="flex">
@@ -133,7 +119,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-          <p>
+          <p data-translate-key="copyright">
             &copy; {new Date().getFullYear()} ModaVista. Todos los derechos reservados.
           </p>
         </div>
