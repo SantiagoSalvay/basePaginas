@@ -3,16 +3,20 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import { useRouter } from 'next/router';
-import { FiUser, FiHeart, FiShoppingBag, FiEdit, FiLock, FiLogOut } from 'react-icons/fi';
+import { FiUser, FiHeart, FiShoppingBag, FiEdit, FiLock, FiLogOut, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
 import Head from 'next/head';
 import PageTransition from '../../components/PageTransition';
+import { useCart } from '../../context/CartContext';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const UserDashboard = () => {
   const { data: session } = useSession();
   const router = useRouter();
   const { tab } = router.query;
+  const { cartItems, removeFromCart, updateQuantity, getSubtotal, cartTotal } = useCart();
+  const { t } = useCurrency();
 
   const [userInfo, setUserInfo] = useState({
     name: '',
@@ -57,7 +61,6 @@ const UserDashboard = () => {
 
   // Datos de ejemplo - en producción estos vendrían de API o estado global
   const favoriteProducts = []; // Array vacío para demostrar el mensaje de "No hay productos"
-  const cartItems = []; // Array vacío para demostrar el mensaje de "No hay productos"
 
   const handleChangeInfo = async () => {
     try {
@@ -487,7 +490,7 @@ const UserDashboard = () => {
                     {cartItems.length > 0 ? (
                       <div className="space-y-4">
                         {cartItems.map((item) => (
-                          <div key={item.id} className="flex items-center border-b border-gray-200 dark:border-gray-700 pb-4">
+                          <div key={item.id + (item.size || '')} className="flex items-center border-b border-gray-200 dark:border-gray-700 pb-4">
                             <div className="w-20 h-20 relative flex-shrink-0">
                               <Image
                                 src={item.image}
@@ -499,8 +502,36 @@ const UserDashboard = () => {
                             </div>
                             <div className="ml-4 flex-grow">
                               <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">Cantidad: {item.quantity}</p>
-                              <p className="text-primary-600 dark:text-primary-400 font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                              {item.size && (
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                  Talla: {item.size}
+                                </p>
+                              )}
+                              <div className="flex items-center mt-2">
+                                <button 
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
+                                  className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                >
+                                  <FiMinus size={14} />
+                                </button>
+                                <span className="mx-2 text-gray-800 dark:text-gray-200">{item.quantity}</span>
+                                <button 
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
+                                  className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                >
+                                  <FiPlus size={14} />
+                                </button>
+                                <span className="ml-auto text-primary-600 dark:text-primary-400 font-bold">
+                                  ${(item.price * item.quantity).toFixed(2)}
+                                </span>
+                                <button 
+                                  onClick={() => removeFromCart(item.id, item.size)}
+                                  className="ml-2 p-1 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                                  aria-label="Eliminar"
+                                >
+                                  <FiTrash2 size={16} />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -508,7 +539,7 @@ const UserDashboard = () => {
                         <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-4">
                           <span className="font-semibold text-gray-900 dark:text-white">Total:</span>
                           <span className="font-bold text-primary-600 dark:text-primary-400">
-                            ${cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}
+                            ${cartTotal.toFixed(2)}
                           </span>
                         </div>
                         

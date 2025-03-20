@@ -5,6 +5,8 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [cartCount, setCartCount] = useState(0);
+  const [cartTotal, setCartTotal] = useState(0);
+  const [showCartNotification, setShowCartNotification] = useState(false);
   
   // Cargar el carrito desde localStorage cuando se monta el componente
   useEffect(() => {
@@ -14,10 +16,12 @@ export const CartProvider = ({ children }) => {
         const parsedCart = JSON.parse(storedCart);
         setCartItems(parsedCart);
         updateCartCount(parsedCart);
+        updateCartTotal(parsedCart);
       } catch (error) {
         console.error('Error parsing cart from localStorage:', error);
         setCartItems([]);
         setCartCount(0);
+        setCartTotal(0);
       }
     }
   }, []);
@@ -35,6 +39,12 @@ export const CartProvider = ({ children }) => {
   const updateCartCount = (items) => {
     const count = items.reduce((total, item) => total + item.quantity, 0);
     setCartCount(count);
+  };
+  
+  // Actualizar el total del carrito
+  const updateCartTotal = (items) => {
+    const total = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    setCartTotal(total);
   };
   
   // Añadir un producto al carrito
@@ -63,6 +73,12 @@ export const CartProvider = ({ children }) => {
       }
       
       updateCartCount(newItems);
+      updateCartTotal(newItems);
+      
+      // Mostrar notificación del total
+      setShowCartNotification(true);
+      setTimeout(() => setShowCartNotification(false), 3000);
+      
       return newItems;
     });
     
@@ -77,6 +93,14 @@ export const CartProvider = ({ children }) => {
       );
       
       updateCartCount(newItems);
+      updateCartTotal(newItems);
+      
+      if (newItems.length > 0) {
+        // Mostrar notificación del total actualizado
+        setShowCartNotification(true);
+        setTimeout(() => setShowCartNotification(false), 3000);
+      }
+      
       return newItems;
     });
   };
@@ -97,6 +121,12 @@ export const CartProvider = ({ children }) => {
       });
       
       updateCartCount(newItems);
+      updateCartTotal(newItems);
+      
+      // Mostrar notificación del total actualizado
+      setShowCartNotification(true);
+      setTimeout(() => setShowCartNotification(false), 3000);
+      
       return newItems;
     });
   };
@@ -105,6 +135,7 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setCartItems([]);
     setCartCount(0);
+    setCartTotal(0);
     localStorage.removeItem('cartItems');
   };
   
@@ -118,6 +149,8 @@ export const CartProvider = ({ children }) => {
       value={{
         cartItems,
         cartCount,
+        cartTotal,
+        showCartNotification,
         addToCart,
         removeFromCart,
         updateQuantity,

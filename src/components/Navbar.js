@@ -14,7 +14,7 @@ const Navbar = () => {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { t } = useCurrency();
-  const { cartCount } = useCart();
+  const { cartCount, cartTotal, showCartNotification } = useCart();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -71,6 +71,26 @@ const Navbar = () => {
           : "bg-transparent py-4"
       }`}
     >
+      {/* Notificación de total del carrito */}
+      <AnimatePresence>
+        {showCartNotification && cartCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: 0 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 bg-primary-600 text-white px-4 py-3 rounded-lg shadow-lg z-50"
+          >
+            <div className="flex items-center">
+              <FiShoppingCart className="mr-2" />
+              <div>
+                <p className="font-medium">Total: ${cartTotal.toFixed(2)}</p>
+                <p className="text-xs">{cartCount} {cartCount === 1 ? 'producto' : 'productos'} en carrito</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
