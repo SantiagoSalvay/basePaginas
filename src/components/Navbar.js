@@ -3,18 +3,20 @@ import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiSun, FiMoon, FiMenu, FiX, FiUser, FiShoppingCart } from "react-icons/fi";
+import { FiSun, FiMoon, FiMenu, FiX, FiUser, FiShoppingCart, FiShoppingBag, FiHeart } from "react-icons/fi";
 import CurrencySelector from "./CurrencySelector";
 import { useCurrency } from "../context/CurrencyContext";
 import { useCart } from "../context/CartContext";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
+import { useFavorites } from '../context/FavoritesContext';
 
 const Navbar = () => {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { t } = useCurrency();
   const { cartCount, cartTotal, showCartNotification } = useCart();
+  const { favoriteItems } = useFavorites();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -60,6 +62,21 @@ const Navbar = () => {
       },
     },
   };
+
+  const toggleMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const navigation = [
+    { name: 'Inicio', href: '/' },
+    { name: 'Productos', href: '/coleccion' },
+    { name: 'Nosotros', href: '/nosotros' },
+    { name: 'Contacto', href: '/contacto' },
+  ];
 
   if (!mounted) return null;
 
@@ -110,50 +127,21 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/">
-              <span
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
                 className={`font-medium hover:text-primary-600 transition-colors ${
-                  scrolled || theme === "dark"
-                    ? "text-gray-800 dark:text-white"
-                    : "text-white"
+                  router.pathname === item.href
+                    ? "text-primary-600 dark:text-primary-400"
+                    : scrolled || theme === "dark"
+                      ? "text-gray-800 dark:text-white"
+                      : "text-white"
                 }`}
               >
-                {t('home')}
-              </span>
-            </Link>
-            <Link href="/coleccion">
-              <span
-                className={`font-medium hover:text-primary-600 transition-colors ${
-                  scrolled || theme === "dark"
-                    ? "text-gray-800 dark:text-white"
-                    : "text-white"
-                }`}
-              >
-                {t('products')}
-              </span>
-            </Link>
-            <Link href="/nosotros">
-              <span
-                className={`font-medium hover:text-primary-600 transition-colors ${
-                  scrolled || theme === "dark"
-                    ? "text-gray-800 dark:text-white"
-                    : "text-white"
-                }`}
-              >
-                {t('about')}
-              </span>
-            </Link>
-            <Link href="/contacto">
-              <span
-                className={`font-medium hover:text-primary-600 transition-colors ${
-                  scrolled || theme === "dark"
-                    ? "text-gray-800 dark:text-white"
-                    : "text-white"
-                }`}
-              >
-                {t('contact')}
-              </span>
-            </Link>
+                {item.name}
+              </Link>
+            ))}
           </nav>
 
           {/* Right Side Actions */}
@@ -187,7 +175,7 @@ const Navbar = () => {
                 }`}
                 aria-label={t('cart')}
               >
-                <FiShoppingCart size={20} />
+                <FiShoppingBag size={20} />
               </button>
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
@@ -269,7 +257,7 @@ const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={toggleMenu}
               className={`md:hidden p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${
                 scrolled || theme === "dark"
                   ? "text-gray-800 dark:text-white"
@@ -295,42 +283,20 @@ const Navbar = () => {
           >
             <div className="container mx-auto px-4 py-8 flex-1 overflow-y-auto">
               <nav className="flex flex-col space-y-6">
-                <Link href="/">
-                  <span
-                    onClick={() => setMobileMenuOpen(false)}
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={closeMenu}
                     className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
                   >
-                    {t('home')}
-                  </span>
-                </Link>
-                <Link href="/coleccion">
-                  <span
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
-                  >
-                    {t('products')}
-                  </span>
-                </Link>
-                <Link href="/nosotros">
-                  <span
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
-                  >
-                    {t('about')}
-                  </span>
-                </Link>
-                <Link href="/contacto">
-                  <span
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors"
-                  >
-                    {t('contact')}
-                  </span>
-                </Link>
+                    {item.name}
+                  </Link>
+                ))}
                 
                 <div 
                   onClick={() => {
-                    setMobileMenuOpen(false);
+                    closeMenu();
                     if (session) {
                       router.push("/user/dashboard");
                       if (typeof window !== "undefined") {
@@ -346,7 +312,7 @@ const Navbar = () => {
                   }}
                   className="text-xl font-medium text-gray-800 dark:text-white hover:text-primary-600 transition-colors flex items-center cursor-pointer"
                 >
-                  <FiShoppingCart className="mr-2" />
+                  <FiShoppingBag className="mr-2" />
                   {t('cart')}
                   {cartCount > 0 && (
                     <span className="ml-2 bg-primary-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
