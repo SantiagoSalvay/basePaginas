@@ -12,6 +12,7 @@
     "autoprefixer": "^10.4.16",
     "axios": "^1.8.1",
     "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.7",
     "formidable": "^3.5.2",
     "framer-motion": "^10.16.4",
     "mongodb": "^6.15.0",

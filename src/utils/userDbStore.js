@@ -37,19 +37,40 @@ export const getUserById = async (id) => {
 // Verificar credenciales de usuario
 export const verifyCredentials = async (email, password) => {
   try {
+    console.log(`Intentando verificar credenciales para: ${email}`);
     const user = await getUserByEmail(email);
     
-    if (user && user.password) {
-      // Verificar si la contraseña coincide
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      
-      if (passwordMatch) {
-        // No devolver la contraseña
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      }
+    if (!user) {
+      console.log(`Usuario no encontrado para el email: ${email}`);
+      return null;
     }
     
+    console.log(`Usuario encontrado: ${user.email}, rol: ${user.role}`);
+    
+    if (user.password) {
+      // Verificar si la contraseña coincide
+      console.log('Comparando contraseñas...');
+      try {
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        console.log(`Resultado de comparación de contraseñas: ${passwordMatch}`);
+        
+        if (passwordMatch) {
+          // No devolver la contraseña
+          const { password, ...userWithoutPassword } = user;
+          console.log('Autenticación exitosa, devolviendo usuario sin contraseña');
+          return userWithoutPassword;
+        }
+      } catch (bcryptError) {
+        console.error('Error en la comparación de bcrypt:', bcryptError);
+        // Si hay un error en el formato del hash, intentamos una comparación directa (solo para depuración)
+        console.log('Contraseña proporcionada:', password);
+        console.log('Hash almacenado:', user.password);
+      }
+    } else {
+      console.log('Usuario no tiene contraseña almacenada');
+    }
+    
+    console.log('Fallo en la autenticación');
     return null;
   } catch (error) {
     console.error('Error al verificar credenciales:', error);
