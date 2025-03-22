@@ -4,6 +4,28 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'localhost', '127.0.0.1'],
   },
+  webpack: (config) => {
+    // mysql2 necesita estos módulos del lado del servidor
+    if (!config.resolve.fallback) {
+      config.resolve.fallback = {};
+    }
+    
+    // Estos módulos solo están disponibles en el lado del servidor de Node.js
+    Object.assign(config.resolve.fallback, {
+      net: false,
+      tls: false,
+      fs: false,
+      dns: false,
+      child_process: false,
+      perf_hooks: false,
+    });
+
+    return config;
+  },
+  // Asegurarnos que estos módulos sólo se usen en el servidor
+  experimental: {
+    serverComponentsExternalPackages: ['mysql2']
+  }
 };
 
 module.exports = nextConfig;

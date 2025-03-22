@@ -1,5 +1,5 @@
 // src/pages/api/auth/signup.js
-import { getUserByEmail, addUser } from '../../../utils/userStore';
+import { getUserByEmail, addUser } from '../../../utils/userDbStore';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
     }
 
     // Verificar si el correo ya está registrado
-    const existingUser = getUserByEmail(email);
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: 'Este correo electrónico ya está registrado' });
     }
@@ -110,17 +110,16 @@ export default async function handler(req, res) {
       createdAt: new Date().toISOString()
     };
 
-    // Guardar usuario usando el userStore
-    addUser(newUser);
+    // Guardar usuario usando el userDbStore
+    const createdUser = await addUser(newUser);
     
     // Enviar correo de verificación
     await sendVerificationEmail(email, name, verificationToken);
 
     // Responder con éxito, excluyendo la contraseña
-    const { password: _, ...userWithoutPassword } = newUser;
     return res.status(201).json({ 
       message: 'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.', 
-      user: userWithoutPassword,
+      user: createdUser,
       requiresVerification: true
     });
     

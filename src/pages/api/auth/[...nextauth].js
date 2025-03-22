@@ -1,7 +1,11 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { verifyCredentials } from "../../../utils/userStore";
+import { verifyCredentials } from "../../../utils/userDbStore";
+import { initDatabase } from "../../../utils/dbServer";
+
+// Inicializar la base de datos al cargar la aplicación
+initDatabase().catch(console.error);
 
 export const authOptions = {
   providers: [
@@ -20,9 +24,14 @@ export const authOptions = {
           return null;
         }
         
-        // Usar el userStore para verificar las credenciales
-        const user = verifyCredentials(credentials.email, credentials.password);
-        return user;
+        try {
+          // Usar el userDbStore para verificar las credenciales con MySQL
+          const user = await verifyCredentials(credentials.email, credentials.password);
+          return user;
+        } catch (error) {
+          console.error("Error en la autorización:", error);
+          return null;
+        }
       },
     }),
   ],
