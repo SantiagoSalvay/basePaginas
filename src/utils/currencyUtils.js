@@ -65,17 +65,24 @@ export const convertPrice = (basePrice, baseCurrency, targetCurrency) => {
 };
 
 // Función para formatear el precio según la moneda
-export const formatPrice = (price, currency) => {
+export const formatPrice = (price, currency, baseCurrency = null) => {
+  let finalPrice = price;
+  
+  // Si se proporciona una moneda base y es diferente a la moneda objetivo, convertir el precio
+  if (baseCurrency && baseCurrency !== currency) {
+    finalPrice = convertPrice(price, baseCurrency, currency);
+  }
+  
   const symbol = currencySymbols[currency];
   
   // Diferentes formatos según la moneda
   switch (currency) {
     case "PYG":
-      return `${symbol} ${Math.round(price).toLocaleString()}`; // Sin decimales para Guaraní
+      return `${symbol} ${Math.round(finalPrice).toLocaleString()}`; // Sin decimales para Guaraní
     case "ARS":
-      return `${symbol} ${price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+      return `${symbol} ${finalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
     default:
-      return `${symbol} ${price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+      return `${symbol} ${finalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
   }
 };
 

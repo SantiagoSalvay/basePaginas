@@ -157,3 +157,65 @@ Este proyecto está bajo la Licencia MIT.
 Para más información, consulta la documentación de Next.js y NextAuth.
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/1e4ff948-d932-4b15-b40f-790701f338f5/deploy-status)](https://app.netlify.com/sites/modsvista/deploys)
+
+## Aplicar Descuentos a Productos
+
+Para aplicar descuentos a productos en la tienda ModaVista, sigue estos pasos:
+
+### 1. Accede al Panel de Administración
+
+1. Inicia sesión con tu cuenta de administrador.
+   - Usuario: admin@admin
+   - Contraseña: admin
+
+2. Una vez iniciada la sesión, haz clic en "Panel de Administración" en el menú de navegación.
+
+### 2. Navega al Gestor de Ofertas
+
+1. En el panel de administración, haz clic en la pestaña "Ofertas" (con el icono de %).
+
+### 3. Aplica Descuentos a Productos
+
+1. Busca el producto al que deseas aplicar un descuento:
+   - Puedes filtrar por categoría usando el selector de categorías.
+   - Puedes buscar productos por nombre o ID usando el campo de búsqueda.
+
+2. Para cada producto, verás botones con diferentes porcentajes de descuento (10%, 15%, 25%, 50%).
+   - Haz clic en el porcentaje de descuento que deseas aplicar.
+   - El descuento se aplicará inmediatamente y verás el precio actualizado.
+
+3. Para eliminar un descuento:
+   - Haz clic en el botón "X" junto al precio con descuento.
+
+### 4. Visualiza los Descuentos
+
+Los descuentos se mostrarán automáticamente en:
+- La página de colección (`/coleccion`)
+- La página de detalle del producto (`/product/[id]`)
+
+En ambas páginas se mostrará:
+- El precio rebajado
+- El precio original tachado
+- La etiqueta con el porcentaje de descuento
+
+### Notas Importantes
+
+- Los descuentos se guardan en el almacenamiento del servidor y persistirán mientras el servidor esté en ejecución.
+- Si reinicias el servidor, los descuentos aplicados manualmente se perderán, ya que se almacenan en memoria.
+- Para hacer que los descuentos persistan entre reinicios, sería necesario implementar una solución de almacenamiento permanente (como una base de datos).
+
+## Información Técnica
+
+- Los descuentos aplicados a productos estáticos (IDs 1001-5999) se guardan en el almacenamiento dinámico y se combinan con los productos estáticos al mostrarlos en la tienda.
+- Cuando aplicas un descuento, se guardan tres propiedades:
+  - `price`: El precio con descuento
+  - `originalPrice`: El precio original antes del descuento
+  - `discount`: Un objeto con `active: true` y `percentage` (el porcentaje de descuento)
+
+## Solución de Problemas
+
+Si los descuentos no aparecen correctamente:
+1. Verifica que el servidor esté en ejecución.
+2. Refresca la página donde esperas ver el descuento.
+3. Verifica en el panel de administración que el descuento esté aplicado correctamente.
+4. Consulta los logs del servidor para verificar si hay algún error.

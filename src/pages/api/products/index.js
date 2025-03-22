@@ -3,6 +3,9 @@ import { authOptions } from "../auth/[...nextauth]";
 import { addProduct, getAllProducts, removeProduct, updateProduct, customIdExists } from "../../../utils/productStore";
 import { staticProducts } from "../../../utils/staticProducts";
 
+// Importar función de inicialización
+import { initServerData } from "../../../utils/initServerData";
+
 // Verificar si un producto es estático (ID en rangos específicos)
 const isStaticProduct = (id) => {
   // Los productos estáticos tienen IDs en rangos específicos:
@@ -19,7 +22,17 @@ const isStaticProduct = (id) => {
   );
 };
 
+// Variable para controlar la inicialización
+let isInitialized = false;
+
 export default async function handler(req, res) {
+  // Inicializar datos si no se ha hecho
+  if (!isInitialized) {
+    initServerData();
+    isInitialized = true;
+    console.log("[API] Datos del servidor inicializados");
+  }
+
   const session = await getServerSession(req, res, authOptions);
 
   // GET - Obtener todos los productos
@@ -31,17 +44,87 @@ export default async function handler(req, res) {
     
     // Primero, añadir todas las categorías de productos estáticos
     Object.keys(staticProducts).forEach(category => {
-      combinedProducts[category] = [...staticProducts[category]];
+      // Hacer una copia profunda para evitar modificar los originales
+      combinedProducts[category] = [...staticProducts[category]].map(product => ({...product}));
     });
     
     // Luego, añadir productos dinámicos, combinando con los estáticos si la categoría ya existe
     Object.keys(dynamicProducts).forEach(category => {
       if (combinedProducts[category]) {
-        combinedProducts[category] = [...combinedProducts[category], ...dynamicProducts[category]];
+        // Para cada producto dinámico, verificar si es una versión modificada de un producto estático
+        dynamicProducts[category].forEach(dynamicProduct => {
+          const isStatic = isStaticProduct(dynamicProduct.id);
+          
+          if (isStatic) {
+            // Es un producto estático modificado, actualizar la versión en combinedProducts
+            const index = combinedProducts[category].findIndex(p => p.id === dynamicProduct.id);
+            if (index !== -1) {
+              // Comprobar si tiene descuento
+              const hasDiscount = dynamicProduct.discount && dynamicProduct.discount.active && dynamicProduct.originalPrice;
+              
+              // Actualizar solo los campos de descuento relevantes
+              combinedProducts[category][index] = {
+                ...combinedProducts[category][index],
+                price: dynamicProduct.price,
+                originalPrice: dynamicProduct.originalPrice,
+                discount: dynamicProduct.discount
+              };
+              
+              // Log detallado para productos estáticos con descuento
+              if (hasDiscount) {
+                console.log(`📊 [API] Producto estático con descuento fusionado: ID ${dynamicProduct.id} - ${dynamicProduct.name} - ${dynamicProduct.discount.percentage}% - Precio original: ${dynamicProduct.originalPrice} - Precio con descuento: ${dynamicProduct.price}`);
+              }
+            }
+          } else {
+            // No es un producto estático, simplemente añadirlo
+            combinedProducts[category].push(dynamicProduct);
+          }
+        });
       } else {
+        // Si la categoría no existe, simplemente añadir todos los productos dinámicos
         combinedProducts[category] = [...dynamicProducts[category]];
       }
     });
+    
+    // Código de depuración - Contar productos con descuentos
+    let totalProducts = 0;
+    let productsWithDiscount = 0;
+    let discountSample = [];
+    let productsByCategory = {};
+    
+    Object.keys(combinedProducts).forEach(category => {
+      const categoryProducts = combinedProducts[category];
+      totalProducts += categoryProducts.length;
+      productsByCategory[category] = categoryProducts.length;
+      
+      categoryProducts.forEach(product => {
+        if (product.discount && product.discount.active && product.originalPrice) {
+          productsWithDiscount++;
+          
+          // Guardar una muestra de hasta 5 productos con descuento para depuración
+          if (discountSample.length < 5) {
+            discountSample.push({
+              id: product.id,
+              name: product.name,
+              category,
+              price: product.price,
+              originalPrice: product.originalPrice,
+              discount: product.discount,
+              isStatic: isStaticProduct(product.id)
+            });
+          }
+        }
+      });
+    });
+    
+    console.log(`[API] Total productos: ${totalProducts}, Por categoría:`, productsByCategory);
+    console.log(`[API] Productos con descuento: ${productsWithDiscount} (${Math.round(productsWithDiscount/totalProducts*100)}%)`);
+    if (discountSample.length > 0) {
+      console.log("[API] Muestra de productos con descuento:");
+      discountSample.forEach(p => {
+        console.log(`   - ${p.id} - ${p.name} (${p.category}) - Precio: ${p.price} (Original: ${p.originalPrice}) - Descuento: ${p.discount.percentage}% - ${p.isStatic ? 'Estático' : 'Dinámico'}`);
+      });
+    }
     
     return res.status(200).json(combinedProducts);
   }
@@ -164,13 +247,53 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Moneda no válida" });
       }
 
-      // Verificar si es un producto estático (no se pueden editar)
-      if (isStaticProduct(product.id)) {
-        return res.status(400).json({ error: "No se pueden editar productos estáticos" });
+      // Verificar si es un producto estático
+      const isStatic = isStaticProduct(product.id);
+      
+      if (isStatic) {
+        // Para productos estáticos, permitimos solo cambios relacionados con descuentos
+        // Buscamos el producto estático original
+        let staticProduct = null;
+        
+        // Buscar el producto en todas las categorías de productos estáticos
+        for (const category in staticProducts) {
+          const found = staticProducts[category].find(p => p.id === product.id);
+          if (found) {
+            staticProduct = found;
+            break;
+          }
+        }
+        
+        if (!staticProduct) {
+          return res.status(404).json({ error: "Producto estático no encontrado" });
+        }
+        
+        // Creamos una copia del producto estático con la información de descuento
+        const updatedStaticProduct = {
+          ...staticProduct,
+          originalPrice: product.originalPrice || staticProduct.price,
+          price: product.price,
+          discount: product.discount
+        };
+        
+        // Información de depuración para descuentos
+        if (product.discount && product.discount.active) {
+          console.log(`[API] Aplicando descuento de ${product.discount.percentage}% al producto estático ${product.id} - ${product.name}`);
+          console.log(`[API] Precio original: ${updatedStaticProduct.originalPrice}, Precio con descuento: ${updatedStaticProduct.price}`);
+        } else if (product.originalPrice) {
+          console.log(`[API] Eliminando descuento del producto estático ${product.id} - ${product.name}`);
+        }
+        
+        // Almacenar el producto actualizado en algún lugar temporal o caché
+        // ya que los productos estáticos no se pueden modificar permanentemente
+        // En este caso, podemos usar el mismo updateProduct si maneja productos estáticos adecuadamente
+        const updatedProduct = updateProduct(updatedStaticProduct);
+        return res.status(200).json(updatedProduct);
+      } else {
+        // Para productos no estáticos, proceder con la actualización normal
+        const updatedProduct = updateProduct(product);
+        return res.status(200).json(updatedProduct);
       }
-
-      const updatedProduct = updateProduct(product);
-      return res.status(200).json(updatedProduct);
     } catch (error) {
       console.error("Error al actualizar producto:", error);
       return res.status(500).json({ error: "Error al actualizar el producto" });

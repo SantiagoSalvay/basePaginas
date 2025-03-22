@@ -38,11 +38,29 @@ const ProductDetail = () => {
       const fetchProductDetails = async () => {
         try {
           const response = await axios.get(`/api/products/${id}`);
-          setProduct(response.data);
+          
+          // Código de depuración
+          console.log("Datos recibidos del API (detalle de producto):", {
+            id: response.data.id,
+            name: response.data.name,
+            price: response.data.price,
+            originalPrice: response.data.originalPrice,
+            discount: response.data.discount,
+            hasDiscount: response.data.discount && response.data.discount.active
+          });
+          
+          // Asegurarse de que el producto tiene todos los campos necesarios
+          const productData = {
+            ...response.data,
+            // Asegurar que discount existe
+            discount: response.data.discount || { active: false, percentage: 0 }
+          };
+          
+          setProduct(productData);
           
           // Seleccionar la primera talla por defecto si hay tallas disponibles
-          if (response.data.sizes && response.data.sizes.length > 0) {
-            setSelectedSize(response.data.sizes[0]);
+          if (productData.sizes && productData.sizes.length > 0) {
+            setSelectedSize(productData.sizes[0]);
           }
           
           // Cargar sugerencias de productos
@@ -228,7 +246,23 @@ const ProductDetail = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-6">{product.description}</p>
               
               <div className="mb-6">
-                <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">${product.price.toFixed(2)} {product.currency}</p>
+                {product.discount && product.discount.active && product.originalPrice ? (
+                  <div className="flex items-center space-x-3">
+                    <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                      ${product.price.toFixed(2)} {product.currency}
+                    </p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400 line-through">
+                      ${product.originalPrice.toFixed(2)} {product.currency}
+                    </p>
+                    <span className="bg-red-600 text-white text-sm font-bold px-2 py-1 rounded">
+                      {product.discount.percentage}% OFF
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                    ${product.price.toFixed(2)} {product.currency}
+                  </p>
+                )}
               </div>
               
               {/* Calificación */}

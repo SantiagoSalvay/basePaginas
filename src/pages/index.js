@@ -51,33 +51,58 @@ export default function Home() {
             }
           });
           
-          // Si hay productos disponibles, seleccionar 4 aleatoriamente
-          if (allProducts.length > 0) {
-            // Mezclar el array de productos
-            const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
-            // Tomar hasta 4 productos
-            const selected = shuffled.slice(0, Math.min(4, shuffled.length));
-            setFeaturedProducts(selected);
-          }
-        } else {
-          // Obtener todos los productos
-          const response = await axios.get('/api/products');
-          const allProducts = [];
-          Object.keys(response.data).forEach(category => {
-            if (response.data[category] && response.data[category].length > 0) {
-              allProducts.push(...response.data[category]);
+          // Seleccionar aleatoriamente hasta 8 productos
+          const randomProducts = [];
+          const totalProducts = allProducts.length;
+          
+          if (totalProducts > 0) {
+            const maxProducts = Math.min(8, totalProducts);
+            const selectedIndices = new Set();
+            
+            while (selectedIndices.size < maxProducts) {
+              const randomIndex = Math.floor(Math.random() * totalProducts);
+              selectedIndices.add(randomIndex);
             }
+            
+            selectedIndices.forEach(index => {
+              randomProducts.push(allProducts[index]);
+            });
+          }
+          
+          setFeaturedProducts(randomProducts);
+        } else {
+          // Hay productos destacados, obtener sus detalles
+          const productsResponse = await axios.get('/api/products');
+          const allProducts = [];
+          
+          Object.keys(productsResponse.data).forEach(category => {
+            allProducts.push(...productsResponse.data[category]);
           });
           
-          // Filtrar los productos destacados por ID
+          // Filtrar los productos destacados
           const featured = allProducts.filter(product => featuredIds.includes(product.id));
-          setFeaturedProducts(featured);
+          
+          // MODIFICACIÓN: asegurarse de que solo se muestren descuentos explícitamente activos
+          const featuredWithoutForcedDiscounts = featured.map(product => {
+            // Si el producto no tiene descuento activo explícito, eliminar cualquier información de descuento
+            if (!product.discount || !product.discount.active) {
+              // Crear una copia sin información de descuento
+              const { discount, originalPrice, ...productWithoutDiscount } = product;
+              return productWithoutDiscount;
+            }
+            
+            // Si tiene descuento activo, mantenerlo tal cual
+            return product;
+          });
+          
+          // Establecer los productos destacados filtrados
+          setFeaturedProducts(featuredWithoutForcedDiscounts);
         }
         
         setLoading(false);
       } catch (err) {
-        console.error("Error al cargar productos:", err);
-        setError("No se pudieron cargar los productos destacados.");
+        console.error("Error al cargar productos destacados:", err);
+        setError("No se pudieron cargar los productos destacados");
         setLoading(false);
       }
     };

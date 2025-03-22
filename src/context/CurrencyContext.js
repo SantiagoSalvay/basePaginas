@@ -149,6 +149,12 @@ export const translations = {
     minutes: 'minutos',
     seconds: 'segundos',
     removedFromWishlist: 'Eliminado de Favoritos',
+    
+    // Panel de Administración
+    staticProductDeleteError: 'Los productos estáticos no se pueden eliminar',
+    productDeleteError: 'Error al eliminar el producto',
+    productDeletedSuccessfully: 'Producto eliminado con éxito',
+    staticProductEditError: 'Los productos estáticos no se pueden editar',
   },
   
   en: {
@@ -161,6 +167,12 @@ export const translations = {
     login: 'Login',
     logout: 'Logout',
     search: 'Search',
+    
+    // Admin Panel
+    staticProductDeleteError: 'Static products cannot be deleted',
+    productDeleteError: 'Error deleting product',
+    productDeletedSuccessfully: 'Product deleted successfully',
+    staticProductEditError: 'Static products cannot be edited',
     
     // Theme
     darkMode: 'Dark Mode',
@@ -279,6 +291,12 @@ export const translations = {
     login: 'Entrar',
     logout: 'Sair',
     search: 'Buscar',
+    
+    // Painel de Administração
+    staticProductDeleteError: 'Produtos estáticos não podem ser excluídos',
+    productDeleteError: 'Erro ao excluir produto',
+    productDeletedSuccessfully: 'Produto excluído com sucesso',
+    staticProductEditError: 'Produtos estáticos não podem ser editados',
     
     // Tema
     darkMode: 'Modo Escuro',

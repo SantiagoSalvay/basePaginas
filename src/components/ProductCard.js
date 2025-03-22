@@ -11,7 +11,21 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 
 const ProductCard = ({ product }) => {
-  const { name, price, image, category, id, sizes = [], currency = "ARS" } = product;
+  const { name, price, image, category, id, sizes = [], currency = "ARS", originalPrice, discount } = product;
+  
+  // Código de depuración para verificar las propiedades recibidas
+  useEffect(() => {
+    if (id) {
+      console.log(`Producto ${id} - ${name}:`, {
+        price,
+        originalPrice,
+        discount,
+        hasDiscount: discount && discount.active,
+        showDiscounted: discount && discount.active && originalPrice
+      });
+    }
+  }, [id, name, price, originalPrice, discount]);
+  
   const { data: session } = useSession();
   const router = useRouter();
   const { currency: selectedCurrency, t } = useCurrency();
@@ -108,6 +122,14 @@ const ProductCard = ({ product }) => {
         <div className="absolute top-0 right-0 bg-black bg-opacity-70 text-white px-3 py-1 m-2 rounded-full text-sm">
           {category}
         </div>
+        
+        {/* Mostrar etiqueta de descuento si existe */}
+        {discount && discount.active && (
+          <div className="absolute top-0 left-0 bg-red-600 text-white px-3 py-1 m-2 rounded-br-lg">
+            <span className="font-bold">{discount.percentage}% OFF</span>
+          </div>
+        )}
+        
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="flex space-x-2">
             <button
@@ -127,6 +149,7 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
       </div>
+      
       <div className="p-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{name}</h3>
         
@@ -144,11 +167,32 @@ const ProductCard = ({ product }) => {
           </div>
         )}
         
-        {/* Precio en la moneda global seleccionada */}
-        <div className="flex flex-col mt-3">
-          <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-            {formatPrice(convertPrice(price, currency, selectedCurrency), selectedCurrency)}
-          </p>
+        {/* Precio */}
+        {console.log(`Renderizando precio para ${id} - ${name}:`, {
+          price,
+          originalPrice,
+          discount,
+          hasDiscount: discount && discount.active,
+          shouldShowDiscounted: discount && discount.active && originalPrice
+        })}
+        <div className="mt-1">
+          {discount && discount.active && originalPrice ? (
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                {formatPrice(price, selectedCurrency, currency)}
+              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                {formatPrice(originalPrice, selectedCurrency, currency)}
+              </span>
+              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                {discount.percentage}% OFF
+              </span>
+            </div>
+          ) : (
+            <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+              {formatPrice(price, selectedCurrency, currency)}
+            </span>
+          )}
         </div>
         
         {/* Estrellas - Movidas a su propia sección */}
@@ -171,7 +215,7 @@ const ProductCard = ({ product }) => {
         </div>
         
         {/* Unique Product ID Badge */}
-        <div className="absolute bottom-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+        <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 inline-block">
           {t('id')}: {id}
         </div>
       </div>

@@ -1,0 +1,28 @@
+{
+  "Camisas": [
+    {
+      "id": 1001,
+      "name": "Camisa Premium",
+      "price": 59.99,
+      "image": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990",
+      "category": "Camisas",
+      "originalPrice": 59.99,
+      "discount": {
+        "active": false,
+        "percentage": 0
+      }
+    },
+    {
+      "id": 1002,
+      "name": "Camisa Slim Fit",
+      "price": 49.99,
+      "image": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c",
+      "category": "Camisas",
+      "discount": {
+        "active": false,
+        "percentage": 0
+      }
+    }
+  ],
+  "Pantalones": []
+}

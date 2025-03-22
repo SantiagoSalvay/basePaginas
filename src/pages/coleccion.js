@@ -28,6 +28,48 @@ export default function Coleccion() {
       try {
         setLoading(true);
         const response = await axios.get('/api/products');
+        
+        // Código de depuración
+        console.log("Datos recibidos del API (colección):", {
+          categoriesCount: Object.keys(response.data).length,
+          sample: Object.keys(response.data).length > 0 
+            ? response.data[Object.keys(response.data)[0]].slice(0, 2).map(p => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                originalPrice: p.originalPrice,
+                discount: p.discount,
+                hasDiscount: p.discount && p.discount.active
+              }))
+            : []
+        });
+        
+        // NUEVO: Verificar todos los productos para detectar si hay alguno con descuento
+        console.log("🛍️ [Colección] Verificando productos con descuentos:");
+        let totalProductsWithDiscount = 0;
+        const productsWithDiscount = [];
+        
+        Object.keys(response.data).forEach(category => {
+          response.data[category].forEach(product => {
+            if (product.discount && product.discount.active && product.originalPrice) {
+              totalProductsWithDiscount++;
+              productsWithDiscount.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                discount: product.discount.percentage,
+                category
+              });
+            }
+          });
+        });
+        
+        console.log(`🛍️ [Colección] Encontrados ${totalProductsWithDiscount} productos con descuento:`);
+        productsWithDiscount.forEach(p => {
+          console.log(`   - ID ${p.id} - ${p.name} (${p.category}) - Descuento: ${p.discount}%`);
+        });
+        
         setProducts(response.data);
         setLoading(false);
       } catch (err) {
@@ -53,8 +95,19 @@ export default function Coleccion() {
         allProducts.push(...(products[category] || []));
       });
       setFilteredProducts(allProducts);
+      
+      // Depuración: Verificar si hay productos con descuentos
+      console.log("Todos los productos:", allProducts.length);
+      const withDiscount = allProducts.filter(p => p.discount && p.discount.active && p.originalPrice);
+      console.log("Productos con descuentos:", withDiscount.length, withDiscount.map(p => `${p.id} - ${p.name}`));
     } else {
       setFilteredProducts(products[activeCategory] || []);
+      
+      // Depuración: Verificar si hay productos con descuentos en esta categoría
+      const categoryProducts = products[activeCategory] || [];
+      console.log(`Productos en categoría ${activeCategory}:`, categoryProducts.length);
+      const withDiscount = categoryProducts.filter(p => p.discount && p.discount.active && p.originalPrice);
+      console.log(`Productos con descuentos en ${activeCategory}:`, withDiscount.length, withDiscount.map(p => `${p.id} - ${p.name}`));
     }
   }, [activeCategory, products]);
 

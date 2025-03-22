@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar } from "react-icons/fi";
+import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar, FiPercent } from "react-icons/fi";
 
 // Componentes
 import Navbar from "../../components/Navbar";
@@ -11,6 +11,7 @@ import ProductForm from "../../components/ProductForm";
 import ProductList from "../../components/ProductList";
 import AnimatedSection from "../../components/AnimatedSection";
 import FeaturedCollection from "../../components/FeaturedCollection";
+import DiscountManager from "../../components/DiscountManager";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -24,38 +25,25 @@ export default function AdminDashboard() {
     averagePrice: 0
   });
 
-  // Cargar productos al iniciar
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Inicializar productos (solo en desarrollo)
-        await fetch("/api/products/init");
+        setLoading(true);
+        const res = await fetch("/api/products");
         
-        // Obtener productos
-        const response = await fetch("/api/products");
-        
-        if (!response.ok) {
-          throw new Error("Error al cargar productos");
+        if (!res.ok) {
+          throw new Error("Error al cargar los productos");
         }
         
-        const data = await response.json();
+        const data = await res.json();
         setProducts(data);
+        setLoading(false);
         
-        // Calcular estadísticas
-        const allProducts = Object.values(data).flat();
-        const totalProducts = allProducts.length;
-        const categories = Object.keys(data).length;
-        const totalPrice = allProducts.reduce((sum, product) => sum + product.price, 0);
-        const averagePrice = totalProducts > 0 ? totalPrice / totalProducts : 0;
-        
-        setStats({
-          totalProducts,
-          categories,
-          averagePrice
-        });
+        // Actualizar estadísticas
+        updateStats(data);
       } catch (err) {
+        console.error(err);
         setError(err.message);
-      } finally {
         setLoading(false);
       }
     };
@@ -67,102 +55,109 @@ export default function AdminDashboard() {
   const handleProductAdded = (newProduct) => {
     setProducts(prevProducts => {
       const category = newProduct.category;
-      return {
-        ...prevProducts,
-        [category]: [...(prevProducts[category] || []), newProduct]
-      };
+      const updatedProducts = { ...prevProducts };
+      
+      if (!updatedProducts[category]) {
+        updatedProducts[category] = [];
+      }
+      
+      updatedProducts[category] = [...updatedProducts[category], newProduct];
+      
+      // Actualizar estadísticas
+      updateStats(updatedProducts);
+      
+      return updatedProducts;
     });
     
-    // Actualizar estadísticas
-    setStats(prevStats => {
-      const allProducts = Object.values({
-        ...products,
-        [newProduct.category]: [...(products[newProduct.category] || []), newProduct]
-      }).flat();
-      
-      const totalProducts = allProducts.length;
-      const categories = Object.keys(products).length;
-      const totalPrice = allProducts.reduce((sum, product) => sum + product.price, 0);
-      const averagePrice = totalProducts > 0 ? totalPrice / totalProducts : 0;
-      
-      return {
-        totalProducts,
-        categories,
-        averagePrice
-      };
-    });
+    // Cambiar a la pestaña de lista para ver el nuevo producto
+    setActiveTab("list");
   };
-
+  
   // Manejar la eliminación de un producto
-  const handleProductDeleted = (deletedProductId) => {
+  const handleProductDeleted = (productId) => {
     setProducts(prevProducts => {
-      const newProducts = {};
+      const updatedProducts = { ...prevProducts };
       
-      // Filtrar el producto eliminado de todas las categorías
-      Object.keys(prevProducts).forEach(category => {
-        const filteredProducts = prevProducts[category].filter(product => product.id !== deletedProductId);
-        if (filteredProducts.length > 0) {
-          newProducts[category] = filteredProducts;
+      // Buscar y eliminar el producto en todas las categorías
+      Object.keys(updatedProducts).forEach(category => {
+        updatedProducts[category] = updatedProducts[category].filter(
+          product => product.id !== productId
+        );
+      });
+      
+      // Eliminar categorías vacías
+      Object.keys(updatedProducts).forEach(category => {
+        if (updatedProducts[category].length === 0) {
+          delete updatedProducts[category];
         }
       });
       
-      return newProducts;
+      // Actualizar estadísticas
+      updateStats(updatedProducts);
+      
+      return updatedProducts;
     });
-    
-    // Actualizar estadísticas
-    updateStats();
   };
-
+  
   // Manejar la actualización de un producto
   const handleProductUpdated = (updatedProduct) => {
     setProducts(prevProducts => {
-      const newProducts = { ...prevProducts };
+      const updatedProducts = { ...prevProducts };
       let found = false;
       
-      // Buscar y actualizar el producto en su categoría
-      Object.keys(newProducts).forEach(category => {
-        const index = newProducts[category].findIndex(p => p.id === updatedProduct.id);
+      // Buscar el producto en todas las categorías
+      Object.keys(updatedProducts).forEach(category => {
+        const index = updatedProducts[category].findIndex(
+          product => product.id === updatedProduct.id
+        );
         
         if (index !== -1) {
           // Si la categoría cambió
           if (category !== updatedProduct.category) {
             // Eliminar de la categoría actual
-            newProducts[category] = newProducts[category].filter(p => p.id !== updatedProduct.id);
+            updatedProducts[category].splice(index, 1);
             
             // Añadir a la nueva categoría
-            if (!newProducts[updatedProduct.category]) {
-              newProducts[updatedProduct.category] = [];
+            if (!updatedProducts[updatedProduct.category]) {
+              updatedProducts[updatedProduct.category] = [];
             }
-            newProducts[updatedProduct.category].push(updatedProduct);
+            updatedProducts[updatedProduct.category].push(updatedProduct);
           } else {
             // Actualizar en la misma categoría
-            newProducts[category][index] = updatedProduct;
+            updatedProducts[category][index] = updatedProduct;
           }
           
           found = true;
         }
       });
       
-      // Si no se encontró, podría ser un producto nuevo
+      // Si no se encontró (caso raro pero posible)
       if (!found) {
-        if (!newProducts[updatedProduct.category]) {
-          newProducts[updatedProduct.category] = [];
+        if (!updatedProducts[updatedProduct.category]) {
+          updatedProducts[updatedProduct.category] = [];
         }
-        newProducts[updatedProduct.category].push(updatedProduct);
+        updatedProducts[updatedProduct.category].push(updatedProduct);
       }
       
-      return newProducts;
+      // Eliminar categorías vacías
+      Object.keys(updatedProducts).forEach(category => {
+        if (updatedProducts[category].length === 0) {
+          delete updatedProducts[category];
+        }
+      });
+      
+      // Actualizar estadísticas
+      updateStats(updatedProducts);
+      
+      return updatedProducts;
     });
-    
-    // Actualizar estadísticas
-    updateStats();
   };
 
   // Actualizar estadísticas basadas en los productos actuales
-  const updateStats = () => {
-    const allProducts = Object.values(products).flat();
+  const updateStats = (productsData) => {
+    const allProducts = Object.values(productsData).flat();
     const totalProducts = allProducts.length;
-    const categories = Object.keys(products).length;
+    const categories = Object.keys(productsData).length;
     const totalPrice = allProducts.reduce((sum, product) => sum + product.price, 0);
     const averagePrice = totalProducts > 0 ? totalPrice / totalProducts : 0;
     
@@ -207,7 +202,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Estadísticas */}
-            <AnimatedSection animation="fadeIn" className="mb-8">
+            <AnimatedSection>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <div className="flex items-center">
@@ -254,7 +249,7 @@ export default function AdminDashboard() {
             </AnimatedSection>
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
+            <div className="border-b border-gray-200 dark:border-gray-700 flex flex-wrap overflow-x-auto mt-12">
               <button
                 onClick={() => setActiveTab("add")}
                 className={`py-4 px-6 text-sm font-medium flex items-center ${
@@ -288,10 +283,21 @@ export default function AdminDashboard() {
                 <FiStar className="mr-2" />
                 Colección Destacada
               </button>
+              <button
+                onClick={() => setActiveTab("offers")}
+                className={`py-4 px-6 text-sm font-medium flex items-center ${
+                  activeTab === "offers"
+                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <FiPercent className="mr-2" />
+                Ofertas
+              </button>
             </div>
 
             {/* Contenido de las tabs */}
-            <AnimatedSection animation="fadeIn">
+            <AnimatedSection>
               {activeTab === "add" ? (
                 <ProductForm onProductAdded={handleProductAdded} />
               ) : activeTab === "list" ? (
@@ -312,8 +318,10 @@ export default function AdminDashboard() {
                     />
                   )}
                 </>
-              ) : (
+              ) : activeTab === "featured" ? (
                 <FeaturedCollection />
+              ) : (
+                <DiscountManager />
               )}
             </AnimatedSection>
           </div>

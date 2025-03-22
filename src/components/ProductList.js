@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FiEdit, FiTrash2, FiStar, FiX, FiCheck, FiAlertTriangle } from "react-icons/fi";
 import Image from "next/image";
-import { useTranslation } from "react-i18next";
+import { useCurrency } from "../context/CurrencyContext";
 
 const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   const [filter, setFilter] = useState("all");
@@ -12,7 +12,7 @@ const ProductList = ({ products, onProductDeleted, onProductUpdated }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   
-  const { t } = useTranslation();
+  const { t } = useCurrency();
   
   // Obtener todas las categorías únicas
   const categories = ["all", ...new Set(Object.keys(products))];

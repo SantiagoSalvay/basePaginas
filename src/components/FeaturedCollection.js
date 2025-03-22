@@ -24,7 +24,21 @@ const FeaturedCollection = () => {
       setAllProducts(products);
 
       const featuredIds = featuredRes.data;
-      const featured = products.filter(p => featuredIds.includes(p.id));
+      let featured = products.filter(p => featuredIds.includes(p.id));
+      
+      // MODIFICACIÓN: asegurarse de que solo se muestren descuentos explícitamente activos
+      featured = featured.map(product => {
+        // Si el producto no tiene descuento activo explícito, eliminar cualquier información de descuento
+        if (!product.discount || !product.discount.active) {
+          // Crear una copia sin información de descuento
+          const { discount, originalPrice, ...productWithoutDiscount } = product;
+          return productWithoutDiscount;
+        }
+        
+        // Si tiene descuento activo, mantenerlo tal cual
+        return product;
+      });
+      
       setFeaturedProducts(featured);
       
       setError(null);
