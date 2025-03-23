@@ -3,13 +3,13 @@
     {
       "id": 1001,
       "name": "Camisa Premium",
-      "price": 50.99,
+      "price": 59.99,
       "image": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990",
       "category": "Camisas",
       "originalPrice": 59.99,
       "discount": {
-        "active": true,
-        "percentage": 15
+        "active": false,
+        "percentage": 0
       }
     },
     {
