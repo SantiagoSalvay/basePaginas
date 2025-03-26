@@ -24,11 +24,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "No autorizado" });
     }
 
-    // Verificar rol de administrador
-    if (session.user.role !== "admin") {
-      return res.status(403).json({ error: "Acceso denegado" });
-    }
-
     // Crear directorio de uploads si no existe
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     try {
@@ -53,7 +48,9 @@ export default async function handler(req, res) {
         }
 
         try {
-          const file = files.file[0]; // Acceder al archivo subido
+          // Determinar si es un archivo de comprobante o un archivo de producto
+          const fileField = files.receipt ? 'receipt' : 'file';
+          const file = files[fileField][0]; // Acceder al archivo subido
           
           if (!file) {
             res.status(400).json({ error: 'No se ha subido ningún archivo' });
@@ -63,7 +60,10 @@ export default async function handler(req, res) {
           // Generar un nombre de archivo único
           const timestamp = Date.now();
           const ext = path.extname(file.originalFilename);
-          const newFilename = `product_${timestamp}${ext}`;
+          
+          // Si es un comprobante de pago, usar un prefijo diferente
+          const prefix = fileField === 'receipt' ? 'receipt' : 'product';
+          const newFilename = `${prefix}_${timestamp}${ext}`;
           
           // Ruta del archivo en el sistema de archivos
           const newPath = path.join(uploadDir, newFilename);
@@ -76,6 +76,7 @@ export default async function handler(req, res) {
           
           res.status(200).json({ 
             url: fileUrl,
+            filePath: fileUrl,
             success: true 
           });
           

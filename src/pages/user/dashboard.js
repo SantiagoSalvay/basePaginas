@@ -16,10 +16,12 @@ import { toast } from 'react-toastify';
 const UserDashboard = () => {
   const { data: session } = useSession();
   const router = useRouter();
-  const { tab } = router.query;
+  const { tab, view } = router.query;
   const { cartItems, removeFromCart, updateQuantity, getSubtotal, cartTotal, addToCart } = useCart();
   const { favoriteItems, removeFromFavorites } = useFavorites();
   const { t } = useCurrency();
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   const [userInfo, setUserInfo] = useState({
     name: '',
@@ -47,20 +49,81 @@ const UserDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile'); // profile, favorites, cart
+  const [activeTab, setActiveTab] = useState('profile'); // profile, favorites, cart, orders
 
   // Inicializar activeTab desde localStorage o desde query params
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("activeTab");
-      if (savedTab) {
-        setActiveTab(savedTab);
-        localStorage.removeItem("activeTab"); // Limpiar después de usar
-      } else if (tab) {
-        setActiveTab(tab);
+      // Si hay view=orders en la URL, establecer la pestaña a 'orders'
+      if (view === 'orders') {
+        setActiveTab('orders');
+        fetchOrders();
+      } else {
+        const savedTab = localStorage.getItem("activeTab");
+        if (savedTab) {
+          setActiveTab(savedTab);
+          localStorage.removeItem("activeTab"); // Limpiar después de usar
+        } else if (tab) {
+          setActiveTab(tab);
+        }
       }
     }
-  }, [tab]);
+  }, [tab, view]);
+
+  // Función para obtener los pedidos del usuario
+  const fetchOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      console.log('Solicitando órdenes al servidor...');
+      
+      const response = await fetch('/api/user/orders');
+      const data = await response.json();
+      
+      console.log('Respuesta del servidor:', data);
+      
+      if (data.success) {
+        console.log(`Recibidas ${data.orders.length} órdenes`);
+        setOrders(data.orders);
+      } else {
+        console.error('Error en la respuesta:', data.message);
+        toast.error('Error al cargar tus compras');
+      }
+    } catch (error) {
+      console.error('Error al obtener órdenes:', error);
+      toast.error('Error al cargar tus compras');
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Funciones de utilidad para mostrar estado y método de pago
+  const getOrderStatusText = (status) => {
+    switch (status) {
+      case 'pending': return 'Pendiente';
+      case 'processing': return 'Procesando';
+      case 'completed': return 'Completada';
+      case 'cancelled': return 'Cancelada';
+      default: return status;
+    }
+  };
+  
+  const getPaymentStatusText = (status) => {
+    switch (status) {
+      case 'pending': return 'Pendiente de verificación';
+      case 'completed': return 'Verificado';
+      case 'rejected': return 'Rechazado';
+      default: return status;
+    }
+  };
+  
+  const getPaymentMethodText = (method) => {
+    switch (method) {
+      case 'card': return 'Tarjeta';
+      case 'mercadopago': return 'Mercado Pago';
+      case 'paypal': return 'PayPal';
+      default: return method;
+    }
+  };
 
   const handleChangeInfo = async () => {
     try {
@@ -268,6 +331,21 @@ const UserDashboard = () => {
                   >
                     <FiShoppingBag className="mr-3" />
                     <span>Carrito</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      setActiveTab('orders');
+                      fetchOrders();
+                    }} 
+                    className={`w-full flex items-center p-3 rounded-md transition-colors ${
+                      activeTab === 'orders' 
+                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <FiShoppingBag className="mr-3" />
+                    <span>Mis Compras</span>
                   </button>
                   
                   <button 
@@ -580,6 +658,7 @@ const UserDashboard = () => {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           className="hero-button primary-button w-full mt-4"
+                          onClick={() => window.location.href = '/checkout'}
                         >
                           Finalizar Compra
                         </motion.button>
@@ -607,8 +686,113 @@ const UserDashboard = () => {
                   </div>
                 </div>
               )}
-      </motion.div>
-    </div>
+              
+              {activeTab === 'orders' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Mis Compras</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Historial de tus pedidos</p>
+                  </div>
+                  
+                  <div className="p-6">
+                    {loadingOrders ? (
+                      <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+                      </div>
+                    ) : orders && orders.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <thead className="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Orden
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Fecha
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Total
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Estado
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Pago
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                            {orders.map((order) => (
+                              <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">#{order.id}</span>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {getPaymentMethodText(order.payment_method)}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="text-sm text-gray-900 dark:text-white">
+                                    {new Date(order.created_at).toLocaleDateString()}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    ${parseFloat(order.total_amount).toFixed(2)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    ${order.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
+                                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 
+                                      order.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 
+                                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`
+                                  }>
+                                    {getOrderStatusText(order.status)}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {order.payment_method === 'card' ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                      Pagado
+                                    </span>
+                                  ) : order.receipt ? (
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                      ${order.receipt.verified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`
+                                    }>
+                                      {order.receipt.verified ? 'Verificado' : 'Pendiente'}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                      No pagado
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <FiShoppingBag className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No tienes compras</h3>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          Aún no has realizado ninguna compra en nuestra tienda.
+                        </p>
+                        <div className="mt-6">
+                          <Link href="/products" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            <FiShoppingBag className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                            Ver productos
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
         </div>
       </div>
     </PageTransition>

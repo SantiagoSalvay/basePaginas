@@ -24,5 +24,23 @@
       }
     }
   ],
-  "Pantalones": []
+  "Pantalones": [
+    {
+      "name": "Pantalon de vaquero",
+      "price": 30000,
+      "category": "Pantalones",
+      "rating": 2,
+      "image": "/uploads/product_1742997801206.jpg",
+      "sizes": [
+        "XL",
+        "L"
+      ],
+      "currency": "ARS",
+      "id": 9001,
+      "discount": {
+        "active": false,
+        "percentage": 0
+      }
+    }
+  ]
 }

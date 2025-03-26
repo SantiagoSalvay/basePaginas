@@ -25,15 +25,8 @@ const Cart = () => {
   };
 
   const handleCheckout = () => {
-    setProcessingOrder(true);
-    
-    // Aquí se implementaría la lógica para procesar el pedido
-    setTimeout(() => {
-      // Simulación de proceso exitoso
-      clearCart();
-      setProcessingOrder(false);
-      // Redireccionar a una página de confirmación o agradecimiento
-    }, 2000);
+    // Redirigir a la página de checkout
+    window.location.href = '/checkout';
   };
 
   return (

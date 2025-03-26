@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar, FiPercent } from "react-icons/fi";
 
 // Componentes
-import Navbar from "../../components/Navbar";
+import AdminNavbar from "../../components/AdminNavbar";
 import AdminProtected from "../../components/AdminProtected";
 import ProductForm from "../../components/ProductForm";
 import ProductList from "../../components/ProductList";
@@ -19,6 +19,8 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [stats, setStats] = useState({
     totalProducts: 0,
     categories: 0,
@@ -50,6 +52,33 @@ export default function AdminDashboard() {
     
     fetchProducts();
   }, []);
+
+  // Cargar órdenes cuando se activa la pestaña de ventas
+  useEffect(() => {
+    if (activeTab === "sales") {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
+  // Función para obtener las órdenes de la base de datos
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const res = await fetch("/api/admin/orders");
+      
+      if (!res.ok) {
+        throw new Error("Error al cargar las órdenes");
+      }
+      
+      const data = await res.json();
+      setOrders(data.orders || []);
+      setOrdersLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+      setOrdersLoading(false);
+    }
+  };
 
   // Manejar la adición de un nuevo producto
   const handleProductAdded = (newProduct) => {
@@ -176,7 +205,7 @@ export default function AdminDashboard() {
           <meta name="description" content="Panel de administración de ModaVista" />
         </Head>
 
-        <Navbar />
+        <AdminNavbar />
 
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4">
@@ -201,107 +230,113 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Estadísticas */}
+            {/* Accesos Rápidos - Principal (fila superior con 3 botones) */}
             <AnimatedSection>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <button 
+                  onClick={() => setActiveTab("add")} 
+                  className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300 text-left"
+                >
                   <div className="flex items-center">
-                    <div className="p-3 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 mr-4">
-                      <FiShoppingBag size={24} />
+                    <div className="w-12 h-12 rounded-full bg-indigo-600 dark:bg-indigo-700 flex items-center justify-center text-white mr-4">
+                      <FiPlus size={24} />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Productos</p>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {stats.totalProducts}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white">Añadir Producto</h3>
+                      <p className="text-sm text-gray-400">Crear un nuevo producto</p>
                     </div>
                   </div>
-                </div>
+                </button>
                 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <button 
+                  onClick={() => setActiveTab("list")} 
+                  className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300 text-left"
+                >
                   <div className="flex items-center">
-                    <div className="p-3 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 mr-4">
+                    <div className="w-12 h-12 rounded-full bg-green-600 dark:bg-green-700 flex items-center justify-center text-white mr-4">
                       <FiList size={24} />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Categorías</p>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {stats.categories}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white">Gestionar Productos</h3>
+                      <p className="text-sm text-gray-400">Editar o eliminar productos</p>
                     </div>
                   </div>
-                </div>
+                </button>
                 
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <button 
+                  onClick={() => setActiveTab("featured")} 
+                  className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300 text-left"
+                >
                   <div className="flex items-center">
-                    <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 mr-4">
-                      <FiDollarSign size={24} />
+                    <div className="w-12 h-12 rounded-full bg-amber-600 dark:bg-amber-700 flex items-center justify-center text-white mr-4">
+                      <FiStar size={24} />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Precio Medio</p>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {stats.averagePrice.toFixed(2)} €
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white">Colección Destacada</h3>
+                      <p className="text-sm text-gray-400">Gestionar productos destacados</p>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
             </AnimatedSection>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700 flex flex-wrap overflow-x-auto mt-12">
-              <button
-                onClick={() => setActiveTab("add")}
-                className={`py-4 px-6 text-sm font-medium flex items-center ${
-                  activeTab === "add"
-                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <FiPlus className="mr-2" />
-                Añadir Producto
-              </button>
-              <button
-                onClick={() => setActiveTab("list")}
-                className={`py-4 px-6 text-sm font-medium flex items-center ${
-                  activeTab === "list"
-                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <FiList className="mr-2" />
-                Gestionar Productos
-              </button>
-              <button
-                onClick={() => setActiveTab("featured")}
-                className={`py-4 px-6 text-sm font-medium flex items-center ${
-                  activeTab === "featured"
-                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <FiStar className="mr-2" />
-                Colección Destacada
-              </button>
-              <button
-                onClick={() => setActiveTab("offers")}
-                className={`py-4 px-6 text-sm font-medium flex items-center ${
-                  activeTab === "offers"
-                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <FiPercent className="mr-2" />
-                Ofertas
-              </button>
-            </div>
+            {/* Accesos Rápidos - Secundario (fila inferior con 3 botones rectangulares) */}
+            <AnimatedSection delay={0.1}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <button
+                  onClick={() => setActiveTab("offers")}
+                  className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300 text-left"
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-pink-600 dark:bg-pink-700 flex items-center justify-center text-white mr-4">
+                      <FiPercent size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Descuentos</h3>
+                      <p className="text-sm text-gray-400">Gestionar ofertas y descuentos</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab("sales")}
+                  className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300 text-left"
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-purple-600 dark:bg-purple-700 flex items-center justify-center text-white mr-4">
+                      <FiShoppingBag size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Ventas</h3>
+                      <p className="text-sm text-gray-400">Administrar órdenes y pagos</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <a href="/admin/create-admin" className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-300">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-teal-600 dark:bg-teal-700 flex items-center justify-center text-white mr-4">
+                      <FiUsers size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Administradores</h3>
+                      <p className="text-sm text-gray-400">Gestionar accesos al panel</p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </AnimatedSection>
 
-            {/* Contenido de las tabs */}
-            <AnimatedSection>
+            {/* Contenido de la tab activa */}
+            <AnimatedSection delay={0.2}>
               {activeTab === "add" ? (
-                <ProductForm onProductAdded={handleProductAdded} />
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Añadir Nuevo Producto</h2>
+                  <ProductForm onProductAdded={handleProductAdded} />
+                </div>
               ) : activeTab === "list" ? (
-                <>
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Gestionar Productos</h2>
                   {loading ? (
                     <div className="flex justify-center items-center py-12">
                       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
@@ -317,12 +352,100 @@ export default function AdminDashboard() {
                       onProductUpdated={handleProductUpdated}
                     />
                   )}
-                </>
+                </div>
               ) : activeTab === "featured" ? (
-                <FeaturedCollection />
-              ) : (
-                <DiscountManager />
-              )}
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Colección Destacada</h2>
+                  <FeaturedCollection />
+                </div>
+              ) : activeTab === "offers" ? (
+                <div className="mt-8">
+                  <DiscountManager />
+                </div>
+              ) : activeTab === "sales" ? (
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Administración de Ventas</h2>
+                  
+                  {ordersLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+                    </div>
+                  ) : orders.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                          <tr>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Orden ID</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cliente</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Método</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pago</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {orders.map((order) => (
+                            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <td className="py-4 px-4 text-sm">{order.id}</td>
+                              <td className="py-4 px-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{order.name}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{order.email}</div>
+                              </td>
+                              <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">
+                                {order.payment_method === 'mercadopago' ? 'Mercado Pago' : 
+                                 order.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">${order.total_amount?.toFixed(2)}</td>
+                              <td className="py-4 px-4">
+                                <span className={`px-2 py-1 text-xs rounded ${
+                                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                  order.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                  order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' :
+                                  order.status === 'in_transit' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                  order.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                  order.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                  order.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {order.status === 'pending' ? 'Pendiente' :
+                                   order.status === 'processing' ? 'Procesando' :
+                                   order.status === 'shipped' ? 'Enviado' :
+                                   order.status === 'in_transit' ? 'En camino' :
+                                   order.status === 'delivered' ? 'Entregado' :
+                                   order.status === 'completed' ? 'Completado' :
+                                   order.status === 'cancelled' ? 'Cancelado' :
+                                   order.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`px-2 py-1 text-xs rounded ${
+                                  order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                  order.payment_status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                  order.payment_status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {order.payment_status === 'pending' ? 'Pendiente' :
+                                   order.payment_status === 'completed' ? 'Verificado' :
+                                   order.payment_status === 'rejected' ? 'Rechazado' :
+                                   order.payment_status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-md">
+                      <p className="text-gray-500 dark:text-gray-400">No hay órdenes disponibles</p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </AnimatedSection>
           </div>
         </main>
