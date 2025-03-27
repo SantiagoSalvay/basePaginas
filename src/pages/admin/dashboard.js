@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar, FiPercent } from "react-icons/fi";
@@ -7,8 +6,8 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 
 // Componentes
-import AdminNavbar from "../../components/AdminNavbar";
 import AdminProtected from "../../components/AdminProtected";
+import AdminDashboardLayout from "../../components/AdminDashboardLayout";
 import ProductForm from "../../components/ProductForm";
 import ProductList from "../../components/ProductList";
 import AnimatedSection from "../../components/AnimatedSection";
@@ -81,8 +80,8 @@ export default function AdminDashboard() {
       }
       
       const data = await res.json();
-      // Filtrar solo órdenes pendientes por defecto
-      setOrders(data.orders.filter(order => order.status === 'pending') || []);
+      // Mostrar todas las órdenes sin filtrar por defecto
+      setOrders(data.orders || []);
       setOrdersLoading(false);
     } catch (err) {
       console.error(err);
@@ -249,7 +248,7 @@ export default function AdminDashboard() {
       const data = await response.json();
       
       if (response.ok) {
-        // Actualizar la orden en el estado
+        // Actualizar la orden en el estado local
         setOrders(prevOrders => 
           prevOrders.map(order => 
             order.id === selectedOrder.id 
@@ -260,14 +259,15 @@ export default function AdminDashboard() {
         
         toast.success(`Estado actualizado a ${getOrderStatusText(newOrderStatus)}`);
         setIsOrderStatusModalOpen(false);
+        
+        // Volver a cargar las órdenes para asegurar sincronización con BD
+        fetchOrders();
       } else {
         toast.error(data.message || "Error al actualizar el estado");
         
         // Si hay error de autenticación, puede ser necesario actualizar la sesión
         if (response.status === 401) {
           toast.error("Sesión expirada. Por favor, inicia sesión de nuevo.");
-          // Opcional: redirigir al login
-          // router.push('/auth/signin');
         }
       }
     } catch (error) {
@@ -337,16 +337,9 @@ export default function AdminDashboard() {
 
   return (
     <AdminProtected>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-        <Head>
-          <title>Panel de Administración | ModaVista</title>
-          <meta name="description" content="Panel de administración de ModaVista" />
-        </Head>
-
-        <AdminNavbar />
-
-        <main className="pt-24 pb-16">
-          <div className="container mx-auto px-4">
+      <AdminDashboardLayout title="Panel de Administración | ModaVista">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <main className="container mx-auto px-4 pt-20 pb-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -504,6 +497,60 @@ export default function AdminDashboard() {
                 <div className="mt-8">
                   <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Administración de Ventas</h2>
                   
+                  {/* Filtros de órdenes */}
+                  <div className="mb-6 flex flex-wrap gap-2">
+                    <button
+                      onClick={fetchOrders}
+                      className="px-3 py-1.5 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition"
+                    >
+                      Todas
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'pending'))}
+                      className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition"
+                    >
+                      Pendientes
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'processing'))}
+                      className="px-3 py-1.5 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
+                    >
+                      Procesando
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'shipped'))}
+                      className="px-3 py-1.5 text-sm bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition"
+                    >
+                      Enviados
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'in_transit'))}
+                      className="px-3 py-1.5 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition"
+                    >
+                      En Camino
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'delivered' || order.status === 'completed'))}
+                      className="px-3 py-1.5 text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition"
+                    >
+                      Entregados/Completados
+                    </button>
+                    <button
+                      onClick={() => setOrders(orders.filter(order => order.status === 'cancelled'))}
+                      className="px-3 py-1.5 text-sm bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition"
+                    >
+                      Cancelados
+                    </button>
+                    
+                    <button
+                      onClick={fetchOrders}
+                      className="px-3 py-1.5 text-sm ml-auto bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center"
+                    >
+                      <FiRefreshCw className="mr-1" size={14} />
+                      Actualizar
+                    </button>
+                  </div>
+                  
                   {ordersLoading ? (
                     <div className="flex justify-center items-center py-12">
                       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
@@ -601,97 +648,217 @@ export default function AdminDashboard() {
                 </div>
               ) : null}
             </AnimatedSection>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
 
-      {/* Modal para ver detalles de la orden */}
-      {isOrderDetailsModalOpen && selectedOrder && (
-        <Modal
-          title={`Detalles de la Orden #${selectedOrder.id}`}
-          onClose={() => setIsOrderDetailsModalOpen(false)}
-        >
-          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm text-gray-400">Cliente:</p>
-                <p className="font-medium">{selectedOrder.name}</p>
-                <p className="text-sm text-gray-400 mt-1">{selectedOrder.email}</p>
+        {/* Modal para ver detalles de la orden */}
+        {isOrderDetailsModalOpen && selectedOrder && (
+          <Modal
+            title={`Detalles de la Orden #${selectedOrder.id}`}
+            onClose={() => setIsOrderDetailsModalOpen(false)}
+          >
+            <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-sm text-gray-400">Cliente:</p>
+                  <p className="font-medium">{selectedOrder.name}</p>
+                  <p className="text-sm text-gray-400 mt-1">{selectedOrder.email}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Fecha:</p>
+                  <p className="font-medium">{new Date(selectedOrder.created_at).toLocaleDateString()}</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-400">Fecha:</p>
-                <p className="font-medium">{new Date(selectedOrder.created_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-4 mb-4">
-              <h3 className="text-lg font-semibold mb-3">Productos</h3>
               
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-800">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Producto</th>
-                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase">Cantidad</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Precio</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700">
-                    {selectedOrder.items && selectedOrder.items.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-800">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center">
-                            <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-700">
-                              {item.image ? (
-                                <img 
-                                  src={item.image} 
-                                  alt={item.product_name || "Producto"} 
-                                  className="h-full w-full object-cover"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = "/placeholder-product.png";
-                                  }}
-                                />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-gray-700 text-gray-500">
-                                  Sin imagen
-                                </div>
-                              )}
+              <div className="border-t border-gray-700 pt-4 mb-4">
+                <h3 className="text-lg font-semibold mb-3">Productos</h3>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Producto</th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase">Cantidad</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Precio</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {selectedOrder.items && selectedOrder.items.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-800">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center">
+                              <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-700">
+                                {item.image ? (
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.product_name || "Producto"} 
+                                    className="h-full w-full object-cover"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = "/placeholder-product.png";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-gray-700 text-gray-500">
+                                    Sin imagen
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-white">{item.product_name || "Producto"}</p>
+                                {item.size && <p className="text-xs text-gray-400">Talla: {item.size}</p>}
+                              </div>
                             </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-white">{item.product_name || "Producto"}</p>
-                              {item.size && <p className="text-xs text-gray-400">Talla: {item.size}</p>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center text-sm text-gray-400">{item.quantity}</td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-400">
-                          ${item.price ? parseFloat(item.price).toFixed(2) : '0.00'}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-white">
-                          ${item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : '0.00'}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm text-gray-400">{item.quantity}</td>
+                          <td className="px-4 py-3 text-right text-sm text-gray-400">
+                            ${item.price ? parseFloat(item.price).toFixed(2) : '0.00'}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-medium text-white">
+                            ${item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : '0.00'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-800">
+                        <td colSpan="3" className="px-4 py-3 text-right text-sm font-medium text-white">Total:</td>
+                        <td className="px-4 py-3 text-right text-lg font-bold text-white">
+                          ${selectedOrder.total_amount ? parseFloat(selectedOrder.total_amount).toFixed(2) : '0.00'}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-800">
-                      <td colSpan="3" className="px-4 py-3 text-right text-sm font-medium text-white">Total:</td>
-                      <td className="px-4 py-3 text-right text-lg font-bold text-white">
-                        ${selectedOrder.total_amount ? parseFloat(selectedOrder.total_amount).toFixed(2) : '0.00'}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-700 pt-4 mb-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-400">Estado:</p>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                      ${
+                        selectedOrder.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' :
+                        selectedOrder.status === 'processing' ? 'bg-blue-900/30 text-blue-300' :
+                        selectedOrder.status === 'shipped' ? 'bg-indigo-900/30 text-indigo-300' :
+                        selectedOrder.status === 'in_transit' ? 'bg-purple-900/30 text-purple-300' :
+                        selectedOrder.status === 'delivered' ? 'bg-green-900/30 text-green-300' :
+                        selectedOrder.status === 'completed' ? 'bg-green-900/30 text-green-300' :
+                        'bg-red-900/30 text-red-300'
+                      }`}
+                    >
+                      {selectedOrder.status === 'pending' ? 'Pendiente' :
+                       selectedOrder.status === 'processing' ? 'Procesando' :
+                       selectedOrder.status === 'shipped' ? 'Enviado' :
+                       selectedOrder.status === 'in_transit' ? 'En camino' :
+                       selectedOrder.status === 'delivered' ? 'Entregado' :
+                       selectedOrder.status === 'completed' ? 'Completado' :
+                       selectedOrder.status === 'cancelled' ? 'Cancelado' :
+                       selectedOrder.status}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Método de pago:</p>
+                    <p className="font-medium mt-1">
+                      {selectedOrder.payment_method === 'mercadopago' ? 'Mercado Pago' : 
+                       selectedOrder.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-700 pt-4 mb-4">
+                <h3 className="text-lg font-semibold mb-3">Información de Envío</h3>
+                <p className="text-sm"><strong>Dirección:</strong> {selectedOrder.address}</p>
+                <p className="text-sm"><strong>Ciudad:</strong> {selectedOrder.city}</p>
+                <p className="text-sm"><strong>Estado/Provincia:</strong> {selectedOrder.state}</p>
+                <p className="text-sm"><strong>Código Postal:</strong> {selectedOrder.postal_code}</p>
+                <p className="text-sm"><strong>Teléfono:</strong> {selectedOrder.phone}</p>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsOrderDetailsModalOpen(false)}
+                  className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
-            
-            <div className="border-t border-gray-700 pt-4 mb-4">
-              <div className="grid grid-cols-2 gap-4">
+          </Modal>
+        )}
+        
+        {/* Modal para ver el comprobante */}
+        {isReceiptModalOpen && selectedReceipt && (
+          <Modal
+            title="Comprobante de Pago"
+            onClose={() => setIsReceiptModalOpen(false)}
+          >
+            <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+              <div className="mb-4">
+                <img 
+                  src={selectedReceipt.receipt_image} 
+                  alt="Comprobante de pago" 
+                  className="w-full h-auto max-h-96 object-contain rounded-md border border-gray-700"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-gray-400">Fecha de subida:</p>
+                  <p className="font-medium">{new Date(selectedReceipt.upload_date).toLocaleDateString()}</p>
+                </div>
                 <div>
                   <p className="text-sm text-gray-400">Estado:</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                  <p className="mt-1">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                      ${selectedReceipt.verified ? 'bg-green-900/30 text-green-300' : 
+                      'bg-yellow-900/30 text-yellow-300'}`}
+                    >
+                      {selectedReceipt.verified ? 'Verificado' : 'Pendiente'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsReceiptModalOpen(false)}
+                  className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+                >
+                  Cerrar
+                </button>
+                <a 
+                  href={selectedReceipt.receipt_image} 
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                >
+                  Descargar
+                </a>
+              </div>
+            </div>
+          </Modal>
+        )}
+        
+        {/* Modal para cambiar el estado de la orden (simplificado) */}
+        {isOrderStatusModalOpen && selectedOrder && (
+          <Modal
+            title="Cambiar Estado de Orden"
+            onClose={() => setIsOrderStatusModalOpen(false)}
+          >
+            <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+              <div className="mb-4">
+                <p className="text-lg font-semibold">Orden #{selectedOrder.id}</p>
+                <p className="text-sm text-gray-400">Cliente: {selectedOrder.name}</p>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium">Estado actual:</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     ${
                       selectedOrder.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' :
                       selectedOrder.status === 'processing' ? 'bg-blue-900/30 text-blue-300' :
@@ -712,163 +879,43 @@ export default function AdminDashboard() {
                      selectedOrder.status}
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-400">Método de pago:</p>
-                  <p className="font-medium mt-1">
-                    {selectedOrder.payment_method === 'mercadopago' ? 'Mercado Pago' : 
-                     selectedOrder.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-4 mb-4">
-              <h3 className="text-lg font-semibold mb-3">Información de Envío</h3>
-              <p className="text-sm"><strong>Dirección:</strong> {selectedOrder.address}</p>
-              <p className="text-sm"><strong>Ciudad:</strong> {selectedOrder.city}</p>
-              <p className="text-sm"><strong>Estado/Provincia:</strong> {selectedOrder.state}</p>
-              <p className="text-sm"><strong>Código Postal:</strong> {selectedOrder.postal_code}</p>
-              <p className="text-sm"><strong>Teléfono:</strong> {selectedOrder.phone}</p>
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setIsOrderDetailsModalOpen(false)}
-                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-      
-      {/* Modal para ver el comprobante */}
-      {isReceiptModalOpen && selectedReceipt && (
-        <Modal
-          title="Comprobante de Pago"
-          onClose={() => setIsReceiptModalOpen(false)}
-        >
-          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
-            <div className="mb-4">
-              <img 
-                src={selectedReceipt.receipt_image} 
-                alt="Comprobante de pago" 
-                className="w-full h-auto max-h-96 object-contain rounded-md border border-gray-700"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-gray-400">Fecha de subida:</p>
-                <p className="font-medium">{new Date(selectedReceipt.upload_date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">Estado:</p>
-                <p className="mt-1">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${selectedReceipt.verified ? 'bg-green-900/30 text-green-300' : 
-                    'bg-yellow-900/30 text-yellow-300'}`}
-                  >
-                    {selectedReceipt.verified ? 'Verificado' : 'Pendiente'}
-                  </span>
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setIsReceiptModalOpen(false)}
-                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
-              >
-                Cerrar
-              </button>
-              <a 
-                href={selectedReceipt.receipt_image} 
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-              >
-                Descargar
-              </a>
-            </div>
-          </div>
-        </Modal>
-      )}
-      
-      {/* Modal para cambiar el estado de la orden (simplificado) */}
-      {isOrderStatusModalOpen && selectedOrder && (
-        <Modal
-          title="Cambiar Estado de Orden"
-          onClose={() => setIsOrderStatusModalOpen(false)}
-        >
-          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
-            <div className="mb-4">
-              <p className="text-lg font-semibold">Orden #{selectedOrder.id}</p>
-              <p className="text-sm text-gray-400">Cliente: {selectedOrder.name}</p>
-            </div>
-            
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-medium">Estado actual:</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                  ${
-                    selectedOrder.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' :
-                    selectedOrder.status === 'processing' ? 'bg-blue-900/30 text-blue-300' :
-                    selectedOrder.status === 'shipped' ? 'bg-indigo-900/30 text-indigo-300' :
-                    selectedOrder.status === 'in_transit' ? 'bg-purple-900/30 text-purple-300' :
-                    selectedOrder.status === 'delivered' ? 'bg-green-900/30 text-green-300' :
-                    selectedOrder.status === 'completed' ? 'bg-green-900/30 text-green-300' :
-                    'bg-red-900/30 text-red-300'
-                  }`}
+                
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Selecciona el nuevo estado:
+                </label>
+                <select
+                  value={newOrderStatus}
+                  onChange={(e) => setNewOrderStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-800 text-white"
                 >
-                  {selectedOrder.status === 'pending' ? 'Pendiente' :
-                   selectedOrder.status === 'processing' ? 'Procesando' :
-                   selectedOrder.status === 'shipped' ? 'Enviado' :
-                   selectedOrder.status === 'in_transit' ? 'En camino' :
-                   selectedOrder.status === 'delivered' ? 'Entregado' :
-                   selectedOrder.status === 'completed' ? 'Completado' :
-                   selectedOrder.status === 'cancelled' ? 'Cancelado' :
-                   selectedOrder.status}
-                </span>
+                  <option value="pending">Pendiente</option>
+                  <option value="processing">Procesando</option>
+                  <option value="shipped">Enviado</option>
+                  <option value="in_transit">En camino</option>
+                  <option value="delivered">Entregado</option>
+                  <option value="completed">Completado</option>
+                  <option value="cancelled">Cancelado</option>
+                </select>
               </div>
               
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Selecciona el nuevo estado:
-              </label>
-              <select
-                value={newOrderStatus}
-                onChange={(e) => setNewOrderStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-800 text-white"
-              >
-                <option value="pending">Pendiente</option>
-                <option value="processing">Procesando</option>
-                <option value="shipped">Enviado</option>
-                <option value="in_transit">En camino</option>
-                <option value="delivered">Entregado</option>
-                <option value="completed">Completado</option>
-                <option value="cancelled">Cancelado</option>
-              </select>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsOrderStatusModalOpen(false)}
+                  className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => updateOrderStatus()}
+                  className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                >
+                  Actualizar estado
+                </button>
+              </div>
             </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setIsOrderStatusModalOpen(false)}
-                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => updateOrderStatus()}
-                className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
-              >
-                Actualizar estado
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        )}
+      </AdminDashboardLayout>
     </AdminProtected>
   );
 }
