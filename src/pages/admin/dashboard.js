@@ -3,6 +3,8 @@ import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { FiPlus, FiList, FiRefreshCw, FiUsers, FiShoppingBag, FiDollarSign, FiStar, FiPercent } from "react-icons/fi";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 // Componentes
 import AdminNavbar from "../../components/AdminNavbar";
@@ -12,6 +14,7 @@ import ProductList from "../../components/ProductList";
 import AnimatedSection from "../../components/AnimatedSection";
 import FeaturedCollection from "../../components/FeaturedCollection";
 import DiscountManager from "../../components/DiscountManager";
+import Modal from "../../components/Modal";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -26,6 +29,13 @@ export default function AdminDashboard() {
     categories: 0,
     averagePrice: 0
   });
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isOrderStatusModalOpen, setIsOrderStatusModalOpen] = useState(false);
+  const [newOrderStatus, setNewOrderStatus] = useState("");
+  const [statusNote, setStatusNote] = useState("");
+  const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -71,7 +81,8 @@ export default function AdminDashboard() {
       }
       
       const data = await res.json();
-      setOrders(data.orders || []);
+      // Filtrar solo órdenes pendientes por defecto
+      setOrders(data.orders.filter(order => order.status === 'pending') || []);
       setOrdersLoading(false);
     } catch (err) {
       console.error(err);
@@ -195,6 +206,133 @@ export default function AdminDashboard() {
       categories,
       averagePrice
     });
+  };
+
+  // Funciones para abrir los diferentes modales
+  const openOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setIsOrderDetailsModalOpen(true);
+  };
+  
+  const openReceiptView = (receipt) => {
+    setSelectedReceipt(receipt);
+    setIsReceiptModalOpen(true);
+  };
+  
+  const openOrderStatusModal = (order) => {
+    setSelectedOrder(order);
+    setNewOrderStatus(order.status);
+    setIsOrderStatusModalOpen(true);
+  };
+
+  // Función para actualizar el estado de una orden
+  const updateOrderStatus = async () => {
+    if (!selectedOrder || !newOrderStatus) return;
+    
+    try {
+      toast.loading('Actualizando estado...');
+      
+      const response = await fetch("/api/admin/update-order-status", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          status: newOrderStatus
+        }),
+        credentials: 'include'
+      });
+      
+      toast.dismiss();
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Actualizar la orden en el estado
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === selectedOrder.id 
+              ? { ...order, status: newOrderStatus } 
+              : order
+          )
+        );
+        
+        toast.success(`Estado actualizado a ${getOrderStatusText(newOrderStatus)}`);
+        setIsOrderStatusModalOpen(false);
+      } else {
+        toast.error(data.message || "Error al actualizar el estado");
+        
+        // Si hay error de autenticación, puede ser necesario actualizar la sesión
+        if (response.status === 401) {
+          toast.error("Sesión expirada. Por favor, inicia sesión de nuevo.");
+          // Opcional: redirigir al login
+          // router.push('/auth/signin');
+        }
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error("Error al actualizar estado:", error);
+      toast.error("Error de conexión. Intenta de nuevo más tarde.");
+    }
+  };
+
+  // Función para verificar un comprobante de pago
+  const verifyReceipt = async (orderId) => {
+    try {
+      const response = await axios.post("/api/admin/verify-payment", {
+        orderId
+      });
+      
+      if (response.data.success) {
+        toast.success("Pago verificado correctamente");
+        setIsReceiptModalOpen(false);
+        
+        // Actualizar órdenes
+        fetchOrders();
+      } else {
+        toast.error(response.data.message || "Error al verificar el pago");
+      }
+    } catch (error) {
+      console.error("Error al verificar pago:", error);
+      toast.error("Error al verificar el pago");
+    }
+  };
+  
+  // Función para rechazar un comprobante de pago
+  const rejectReceipt = async (orderId) => {
+    try {
+      const response = await axios.post("/api/admin/reject-payment", {
+        orderId
+      });
+      
+      if (response.data.success) {
+        toast.success("Pago rechazado");
+        setIsReceiptModalOpen(false);
+        
+        // Actualizar órdenes
+        fetchOrders();
+      } else {
+        toast.error(response.data.message || "Error al rechazar el pago");
+      }
+    } catch (error) {
+      console.error("Error al rechazar pago:", error);
+      toast.error("Error al rechazar el pago");
+    }
+  };
+
+  // Función para obtener el texto del estado
+  const getOrderStatusText = (status) => {
+    switch (status) {
+      case "pending": return "Pendiente";
+      case "processing": return "Procesando";
+      case "shipped": return "Enviado";
+      case "in_transit": return "En camino";
+      case "delivered": return "Entregado";
+      case "completed": return "Finalizado";
+      case "cancelled": return "Cancelado";
+      default: return status;
+    }
   };
 
   return (
@@ -380,8 +518,8 @@ export default function AdminDashboard() {
                             <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Método</th>
                             <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
                             <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pago</th>
                             <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -396,7 +534,9 @@ export default function AdminDashboard() {
                                 {order.payment_method === 'mercadopago' ? 'Mercado Pago' : 
                                  order.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
                               </td>
-                              <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">${order.total_amount?.toFixed(2)}</td>
+                              <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">
+                                ${order.total_amount ? parseFloat(order.total_amount).toFixed(2) : '0.00'}
+                              </td>
                               <td className="py-4 px-4">
                                 <span className={`px-2 py-1 text-xs rounded ${
                                   order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
@@ -418,21 +558,35 @@ export default function AdminDashboard() {
                                    order.status}
                                 </span>
                               </td>
-                              <td className="py-4 px-4">
-                                <span className={`px-2 py-1 text-xs rounded ${
-                                  order.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                  order.payment_status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                  order.payment_status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                }`}>
-                                  {order.payment_status === 'pending' ? 'Pendiente' :
-                                   order.payment_status === 'completed' ? 'Verificado' :
-                                   order.payment_status === 'rejected' ? 'Rechazado' :
-                                   order.payment_status}
-                                </span>
-                              </td>
                               <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">
                                 {new Date(order.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="py-4 px-4 text-sm">
+                                <div className="flex space-x-3">
+                                  <button 
+                                    onClick={() => openOrderDetails(order)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title="Ver detalles"
+                                  >
+                                    Ver detalles
+                                  </button>
+                                  {order.receipt && (
+                                    <button 
+                                      onClick={() => openReceiptView(order.receipt)}
+                                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                      title="Ver comprobante"
+                                    >
+                                      Ver comprobante
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => openOrderStatusModal(order)}
+                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                    title="Cambiar estado"
+                                  >
+                                    Cambiar estado
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -450,6 +604,271 @@ export default function AdminDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Modal para ver detalles de la orden */}
+      {isOrderDetailsModalOpen && selectedOrder && (
+        <Modal
+          title={`Detalles de la Orden #${selectedOrder.id}`}
+          onClose={() => setIsOrderDetailsModalOpen(false)}
+        >
+          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <p className="text-sm text-gray-400">Cliente:</p>
+                <p className="font-medium">{selectedOrder.name}</p>
+                <p className="text-sm text-gray-400 mt-1">{selectedOrder.email}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-400">Fecha:</p>
+                <p className="font-medium">{new Date(selectedOrder.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4 mb-4">
+              <h3 className="text-lg font-semibold mb-3">Productos</h3>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Producto</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-400 uppercase">Cantidad</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Precio</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {selectedOrder.items && selectedOrder.items.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-800">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-gray-700">
+                              {item.image ? (
+                                <img 
+                                  src={item.image} 
+                                  alt={item.product_name || "Producto"} 
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/placeholder-product.png";
+                                  }}
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-gray-700 text-gray-500">
+                                  Sin imagen
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-white">{item.product_name || "Producto"}</p>
+                              {item.size && <p className="text-xs text-gray-400">Talla: {item.size}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm text-gray-400">{item.quantity}</td>
+                        <td className="px-4 py-3 text-right text-sm text-gray-400">
+                          ${item.price ? parseFloat(item.price).toFixed(2) : '0.00'}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-white">
+                          ${item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : '0.00'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-800">
+                      <td colSpan="3" className="px-4 py-3 text-right text-sm font-medium text-white">Total:</td>
+                      <td className="px-4 py-3 text-right text-lg font-bold text-white">
+                        ${selectedOrder.total_amount ? parseFloat(selectedOrder.total_amount).toFixed(2) : '0.00'}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4 mb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400">Estado:</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                    ${
+                      selectedOrder.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' :
+                      selectedOrder.status === 'processing' ? 'bg-blue-900/30 text-blue-300' :
+                      selectedOrder.status === 'shipped' ? 'bg-indigo-900/30 text-indigo-300' :
+                      selectedOrder.status === 'in_transit' ? 'bg-purple-900/30 text-purple-300' :
+                      selectedOrder.status === 'delivered' ? 'bg-green-900/30 text-green-300' :
+                      selectedOrder.status === 'completed' ? 'bg-green-900/30 text-green-300' :
+                      'bg-red-900/30 text-red-300'
+                    }`}
+                  >
+                    {selectedOrder.status === 'pending' ? 'Pendiente' :
+                     selectedOrder.status === 'processing' ? 'Procesando' :
+                     selectedOrder.status === 'shipped' ? 'Enviado' :
+                     selectedOrder.status === 'in_transit' ? 'En camino' :
+                     selectedOrder.status === 'delivered' ? 'Entregado' :
+                     selectedOrder.status === 'completed' ? 'Completado' :
+                     selectedOrder.status === 'cancelled' ? 'Cancelado' :
+                     selectedOrder.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Método de pago:</p>
+                  <p className="font-medium mt-1">
+                    {selectedOrder.payment_method === 'mercadopago' ? 'Mercado Pago' : 
+                     selectedOrder.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4 mb-4">
+              <h3 className="text-lg font-semibold mb-3">Información de Envío</h3>
+              <p className="text-sm"><strong>Dirección:</strong> {selectedOrder.address}</p>
+              <p className="text-sm"><strong>Ciudad:</strong> {selectedOrder.city}</p>
+              <p className="text-sm"><strong>Estado/Provincia:</strong> {selectedOrder.state}</p>
+              <p className="text-sm"><strong>Código Postal:</strong> {selectedOrder.postal_code}</p>
+              <p className="text-sm"><strong>Teléfono:</strong> {selectedOrder.phone}</p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsOrderDetailsModalOpen(false)}
+                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      
+      {/* Modal para ver el comprobante */}
+      {isReceiptModalOpen && selectedReceipt && (
+        <Modal
+          title="Comprobante de Pago"
+          onClose={() => setIsReceiptModalOpen(false)}
+        >
+          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+            <div className="mb-4">
+              <img 
+                src={selectedReceipt.receipt_image} 
+                alt="Comprobante de pago" 
+                className="w-full h-auto max-h-96 object-contain rounded-md border border-gray-700"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-400">Fecha de subida:</p>
+                <p className="font-medium">{new Date(selectedReceipt.upload_date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Estado:</p>
+                <p className="mt-1">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    ${selectedReceipt.verified ? 'bg-green-900/30 text-green-300' : 
+                    'bg-yellow-900/30 text-yellow-300'}`}
+                  >
+                    {selectedReceipt.verified ? 'Verificado' : 'Pendiente'}
+                  </span>
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsReceiptModalOpen(false)}
+                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+              >
+                Cerrar
+              </button>
+              <a 
+                href={selectedReceipt.receipt_image} 
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+              >
+                Descargar
+              </a>
+            </div>
+          </div>
+        </Modal>
+      )}
+      
+      {/* Modal para cambiar el estado de la orden (simplificado) */}
+      {isOrderStatusModalOpen && selectedOrder && (
+        <Modal
+          title="Cambiar Estado de Orden"
+          onClose={() => setIsOrderStatusModalOpen(false)}
+        >
+          <div className="p-6 bg-gray-900 text-white rounded-b-lg">
+            <div className="mb-4">
+              <p className="text-lg font-semibold">Orden #{selectedOrder.id}</p>
+              <p className="text-sm text-gray-400">Cliente: {selectedOrder.name}</p>
+            </div>
+            
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-medium">Estado actual:</p>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  ${
+                    selectedOrder.status === 'pending' ? 'bg-yellow-900/30 text-yellow-300' :
+                    selectedOrder.status === 'processing' ? 'bg-blue-900/30 text-blue-300' :
+                    selectedOrder.status === 'shipped' ? 'bg-indigo-900/30 text-indigo-300' :
+                    selectedOrder.status === 'in_transit' ? 'bg-purple-900/30 text-purple-300' :
+                    selectedOrder.status === 'delivered' ? 'bg-green-900/30 text-green-300' :
+                    selectedOrder.status === 'completed' ? 'bg-green-900/30 text-green-300' :
+                    'bg-red-900/30 text-red-300'
+                  }`}
+                >
+                  {selectedOrder.status === 'pending' ? 'Pendiente' :
+                   selectedOrder.status === 'processing' ? 'Procesando' :
+                   selectedOrder.status === 'shipped' ? 'Enviado' :
+                   selectedOrder.status === 'in_transit' ? 'En camino' :
+                   selectedOrder.status === 'delivered' ? 'Entregado' :
+                   selectedOrder.status === 'completed' ? 'Completado' :
+                   selectedOrder.status === 'cancelled' ? 'Cancelado' :
+                   selectedOrder.status}
+                </span>
+              </div>
+              
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Selecciona el nuevo estado:
+              </label>
+              <select
+                value={newOrderStatus}
+                onChange={(e) => setNewOrderStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-800 text-white"
+              >
+                <option value="pending">Pendiente</option>
+                <option value="processing">Procesando</option>
+                <option value="shipped">Enviado</option>
+                <option value="in_transit">En camino</option>
+                <option value="delivered">Entregado</option>
+                <option value="completed">Completado</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsOrderStatusModalOpen(false)}
+                className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => updateOrderStatus()}
+                className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+              >
+                Actualizar estado
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </AdminProtected>
   );
 }

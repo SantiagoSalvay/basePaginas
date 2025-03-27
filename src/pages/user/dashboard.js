@@ -101,7 +101,10 @@ const UserDashboard = () => {
     switch (status) {
       case 'pending': return 'Pendiente';
       case 'processing': return 'Procesando';
-      case 'completed': return 'Completada';
+      case 'shipped': return 'Enviado';
+      case 'in_transit': return 'En camino';
+      case 'delivered': return 'Entregado';
+      case 'completed': return 'Finalizado';
       case 'cancelled': return 'Cancelada';
       default: return status;
     }
@@ -716,9 +719,6 @@ const UserDashboard = () => {
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Estado
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Pago
-                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
@@ -744,29 +744,14 @@ const UserDashboard = () => {
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                     ${order.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
                                       order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 
-                                      order.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 
+                                      order.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                      order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                      order.status === 'in_transit' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                                      order.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
                                       'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`
                                   }>
                                     {getOrderStatusText(order.status)}
                                   </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  {order.payment_method === 'card' ? (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                      Pagado
-                                    </span>
-                                  ) : order.receipt ? (
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                      ${order.receipt.verified ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
-                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'}`
-                                    }>
-                                      {order.receipt.verified ? 'Verificado' : 'Pendiente'}
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                      No pagado
-                                    </span>
-                                  )}
                                 </td>
                               </tr>
                             ))}

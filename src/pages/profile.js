@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { getSession, signOut } from 'next-auth/react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { FiUser, FiShoppingBag, FiLogOut, FiCheckCircle, FiClock, FiXCircle, FiTruck, FiFileText } from 'react-icons/fi';
+import { FiUser, FiShoppingBag, FiLogOut, FiCheckCircle, FiClock, FiXCircle, FiTruck, FiFileText, FiPackage } from 'react-icons/fi';
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
 import CartWidget from '../components/CartWidget';
@@ -96,9 +96,25 @@ export default function ProfilePage() {
     switch (status) {
       case 'pending': return 'Pendiente';
       case 'processing': return 'Procesando';
-      case 'completed': return 'Completada';
+      case 'shipped': return 'Enviado';
+      case 'in_transit': return 'En camino';
+      case 'delivered': return 'Entregado';
+      case 'completed': return 'Finalizado';
       case 'cancelled': return 'Cancelada';
       default: return status;
+    }
+  };
+  
+  const getOrderStatusIcon = (status) => {
+    switch (status) {
+      case 'pending': return <FiClock className="text-yellow-500" />;
+      case 'processing': return <FiPackage className="text-blue-500" />;
+      case 'shipped': return <FiTruck className="text-blue-500" />;
+      case 'in_transit': return <FiTruck className="text-indigo-500" />;
+      case 'delivered': return <FiCheckCircle className="text-green-500" />;
+      case 'completed': return <FiCheckCircle className="text-green-500" />;
+      case 'cancelled': return <FiXCircle className="text-red-500" />;
+      default: return <FiClock className="text-gray-500" />;
     }
   };
   
@@ -108,16 +124,6 @@ export default function ProfilePage() {
       case 'completed': return 'Verificado';
       case 'rejected': return 'Rechazado';
       default: return status;
-    }
-  };
-  
-  const getOrderStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return <FiClock className="text-yellow-500" />;
-      case 'processing': return <FiTruck className="text-blue-500" />;
-      case 'completed': return <FiCheckCircle className="text-green-500" />;
-      case 'cancelled': return <FiXCircle className="text-red-500" />;
-      default: return <FiClock className="text-gray-500" />;
     }
   };
   
@@ -287,25 +293,16 @@ export default function ProfilePage() {
                                   ${
                                     order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                     order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                    order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                                    order.status === 'in_transit' ? 'bg-purple-100 text-purple-800' :
+                                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                                     order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                    'bg-red-100 text-red-800'
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
                                   }`}>
                                   {getOrderStatusText(order.status)}
                                 </span>
                               </div>
-                              {(order.payment_method === 'mercadopago' || order.payment_method === 'paypal') && (
-                                <div className="flex items-center mt-1">
-                                  {getPaymentStatusIcon(order.payment_status)}
-                                  <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                    ${
-                                      order.payment_status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                                      order.payment_status === 'completed' ? 'bg-green-50 text-green-700' :
-                                      'bg-red-50 text-red-700'
-                                    }`}>
-                                    {getPaymentStatusText(order.payment_status)}
-                                  </span>
-                                </div>
-                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
@@ -365,6 +362,9 @@ export default function ProfilePage() {
                   ${
                     selectedOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     selectedOrder.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                    selectedOrder.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                    selectedOrder.status === 'in_transit' ? 'bg-purple-100 text-purple-800' :
+                    selectedOrder.status === 'delivered' ? 'bg-green-100 text-green-800' :
                     selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
                     selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
@@ -411,25 +411,6 @@ export default function ProfilePage() {
               <h3 className="text-lg font-semibold mb-3">Método de Pago</h3>
               <div className="bg-gray-50 p-4 rounded-md">
                 <p className="font-medium">{getPaymentMethodText(selectedOrder.payment_method)}</p>
-                {(selectedOrder.payment_method === 'mercadopago' || selectedOrder.payment_method === 'paypal') && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">Estado del pago:</p>
-                    <p className={`text-sm font-medium ${
-                      selectedOrder.payment_status === 'completed' ? 'text-green-600' :
-                      selectedOrder.payment_status === 'rejected' ? 'text-red-600' :
-                      'text-yellow-600'
-                    }`}>
-                      {getPaymentStatusText(selectedOrder.payment_status)}
-                    </p>
-                    
-                    {selectedOrder.receipt && selectedOrder.receipt.verification_status === 'rejected' && (
-                      <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-                        <p className="font-semibold">Motivo de rechazo:</p>
-                        <p>{selectedOrder.receipt.admin_notes}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             

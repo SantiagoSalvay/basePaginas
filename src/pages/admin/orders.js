@@ -327,7 +327,9 @@ export default function AdminOrders() {
                       {order.payment_method === 'mercadopago' ? 'Mercado Pago' : 
                        order.payment_method === 'paypal' ? 'PayPal' : 'Tarjeta'}
                     </td>
-                    <td className="py-4 px-4 text-sm">${order.total_amount.toFixed(2)}</td>
+                    <td className="py-4 px-4 text-sm">
+                      ${order.total_amount ? parseFloat(order.total_amount).toFixed(2) : '0.00'}
+                    </td>
                     <td className="py-4 px-4">
                       <span className={`px-2 py-1 text-xs rounded ${
                         order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -491,15 +493,21 @@ export default function AdminOrders() {
                           </div>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${item.price.toFixed(2)}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${(item.price * item.quantity).toFixed(2)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                          ${item.price ? parseFloat(item.price).toFixed(2) : '0.00'}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                          ${item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : '0.00'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-gray-50">
                       <td colSpan="3" className="px-4 py-2 text-right text-sm font-medium">Total:</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-bold">${selectedOrder.total_amount.toFixed(2)}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-bold">
+                        ${selectedOrder.total_amount ? parseFloat(selectedOrder.total_amount).toFixed(2) : '0.00'}
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
