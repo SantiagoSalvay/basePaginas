@@ -30,7 +30,7 @@ const Cart = () => {
   };
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Head>
           <title>{t('cart')} | ModaVista</title>
@@ -241,8 +241,15 @@ const Cart = () => {
 
         <Footer />
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
-export default Cart; 
+export default Cart;
+
+// Esto fuerza Next.js a usar SSR para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}, // se pasarán al componente de página
+  }
+} 

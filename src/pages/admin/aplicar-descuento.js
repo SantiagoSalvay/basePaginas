@@ -186,4 +186,11 @@ const AplicarDescuento = () => {
   );
 };
 
-export default AplicarDescuento; 
+export default AplicarDescuento;
+
+// Esto fuerza Next.js a usar SSR para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}, // se pasarán al componente de página
+  }
+} 

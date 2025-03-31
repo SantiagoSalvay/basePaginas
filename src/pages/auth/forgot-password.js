@@ -55,7 +55,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <Head>
         <title>Recuperar Contraseña | ModaVista</title>
       </Head>
@@ -140,6 +140,13 @@ export default function ForgotPassword() {
           </div>
         </motion.div>
       </div>
-    </PageTransition>
+    </div>
   );
+}
+
+// Esto fuerza Next.js a usar SSR para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}, // se pasarán al componente de página
+  }
 }

@@ -22,7 +22,9 @@ const nextConfig = {
 
     return config;
   },
-  // Asegurarnos que estos módulos sólo se usen en el servidor
+  // Deshabilitar prerenderización estática por completo
+  output: 'standalone',
+  // Configuraciones experimentales
   experimental: {
     serverComponentsExternalPackages: ['mysql2']
   }

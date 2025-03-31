@@ -239,7 +239,7 @@ const UserDashboard = () => {
   }
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <UserDashboardLayout title="Mi Perfil | ModaVista">
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4 pt-20 pb-6">
@@ -774,7 +774,7 @@ const UserDashboard = () => {
           </div>
         </div>
       </UserDashboardLayout>
-    </PageTransition>
+    </div>
   );
 };
 

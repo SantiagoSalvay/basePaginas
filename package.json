@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:ssr": "cross-env NEXT_DISABLE_STATICGEN=true next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@types/node": "^20.9.4",
     "@types/react": "^18.2.38",
+    "cross-env": "^7.0.3",
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.4",
     "prisma": "^6.5.0",

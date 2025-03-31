@@ -116,20 +116,20 @@ export default function ResetPassword() {
 
   if (tokenValid === null) {
     return (
-      <PageTransition>
+      <div className="page-transition">
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600 dark:text-gray-300">Verificando token...</p>
           </div>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   if (tokenValid === false) {
     return (
-      <PageTransition>
+      <div className="page-transition">
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
             <div className="mx-auto h-20 w-20 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
@@ -148,12 +148,12 @@ export default function ResetPassword() {
             </div>
           </div>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <Head>
         <title>Restablecer Contraseña | ModaVista</title>
       </Head>
@@ -278,6 +278,13 @@ export default function ResetPassword() {
           )}
         </motion.div>
       </div>
-    </PageTransition>
+    </div>
   );
+}
+
+// Esto fuerza Next.js a usar SSR para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}, // se pasarán al componente de página
+  }
 }

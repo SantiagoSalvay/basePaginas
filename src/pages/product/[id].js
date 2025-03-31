@@ -184,7 +184,7 @@ const ProductDetail = () => {
   );
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Head>
           <title>{product?.name || 'Detalles del producto'} | ModaVista</title>
@@ -429,7 +429,7 @@ const ProductDetail = () => {
         {/* Footer */}
         <Footer />
       </div>
-    </PageTransition>
+    </div>
   );
 };
 

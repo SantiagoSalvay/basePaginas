@@ -433,7 +433,7 @@ const Checkout = () => {
 
   if (orderComplete) {
     return (
-      <PageTransition>
+      <div className="page-transition">
         <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 dark:from-gray-900 dark:to-indigo-950">
           <Head>
             <title>Pedido Completado | Tienda</title>
@@ -454,13 +454,13 @@ const Checkout = () => {
             </div>
           </main>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   if (cartItems.length === 0 && !orderComplete) {
     return (
-      <PageTransition>
+      <div className="page-transition">
         <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 dark:from-gray-900 dark:to-indigo-950">
           <Head>
             <title>Checkout | Tienda</title>
@@ -479,12 +479,12 @@ const Checkout = () => {
             </div>
           </main>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 dark:from-gray-900 dark:to-indigo-950">
         <Head>
           <title>Checkout | Tienda</title>
@@ -854,8 +854,15 @@ const Checkout = () => {
           </div>
         </main>
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
-export default Checkout; 
+export default Checkout;
+
+// Esto fuerza Next.js a usar SSR para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}, // se pasarán al componente de página
+  }
+} 

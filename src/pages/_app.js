@@ -1,6 +1,5 @@
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { AnimatePresence } from "framer-motion";
 import { ToastContainer } from "react-toastify";
 import { CurrencyProvider } from "../context/CurrencyContext";
 import { FeaturedProductsProvider } from '../context/FeaturedProductsContext';
@@ -21,9 +20,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps }, router }) {
           <CartProvider>
             <FavoritesProvider>
               <FeaturedProductsProvider>
-                <AnimatePresence mode="wait" initial={false}>
-                  <Component {...pageProps} key={router.route} />
-                </AnimatePresence>
+                <Component {...pageProps} />
                 <ToastContainer
                   position="top-right"
                   autoClose={5000}

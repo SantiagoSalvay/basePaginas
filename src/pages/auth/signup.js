@@ -147,7 +147,7 @@ export default function SignUp({ csrfToken }) {
   };
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <Head>
           <title>Crear Cuenta | ModaVista</title>
@@ -433,7 +433,7 @@ export default function SignUp({ csrfToken }) {
           </motion.div>
         </motion.div>
       </div>
-    </PageTransition>
+    </div>
   );
 }
 

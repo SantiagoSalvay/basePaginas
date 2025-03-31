@@ -279,7 +279,7 @@ const UserProfile = () => {
   };
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Head>
           <title>{t('myAccount')} | ModaVista</title>
@@ -403,7 +403,7 @@ const UserProfile = () => {
 
         <Footer />
       </div>
-    </PageTransition>
+    </div>
   );
 };
 

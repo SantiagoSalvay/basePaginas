@@ -23,7 +23,7 @@ export default function Contacto() {
   if (!mounted) return null;
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen">
         <Head>
           <title>Contacto | ModaVista</title>
@@ -171,6 +171,6 @@ export default function Contacto() {
 
         <Footer />
       </div>
-    </PageTransition>
+    </div>
   );
 }

@@ -137,7 +137,7 @@ export default function Home() {
   ];
 
   return (
-    <PageTransition>
+    <div className="page-transition">
       <div className="min-h-screen">
         <Head>
           <title>ModaVista | Moda Exclusiva</title>
@@ -285,6 +285,6 @@ export default function Home() {
 
         <Footer />
       </div>
-    </PageTransition>
+    </div>
   );
 }
