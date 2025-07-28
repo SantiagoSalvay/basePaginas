@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: modavista
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MYSQL_HOST
+        value: tramway.proxy.rlwy.net
+      - key: MYSQL_USER
+        value: root
+      - key: MYSQL_PASSWORD
+        value: BcUgLdOusCuzLyetBjUWyLlgGAdnyjFu
+      - key: MYSQL_DATABASE
+        value: railway
+      - key: MYSQL_PORT
+        value: "28149"
+      - key: NEXTAUTH_URL
+        fromService:
+          type: web
+          name: modavista
+          property: host
+      - key: NEXTAUTH_SECRET
+        generateValue: true 

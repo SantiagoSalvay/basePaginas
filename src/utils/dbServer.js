@@ -1,13 +1,18 @@
 // src/utils/dbServer.js
 // Este archivo SOLO debe ser importado en API Routes (páginas en /api/*)
 import mysql from 'mysql2/promise';
+import 'dotenv/config';
 
 // Configuración de la conexión a MySQL
 const dbConfig = {
-  host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || 'cordoba2022',
-  database: process.env.MYSQL_DATABASE || 'modavista_db'
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  port: parseInt(process.env.MYSQL_PORT || '3306', 10),
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
 };
 
 // Pool de conexiones singleton
