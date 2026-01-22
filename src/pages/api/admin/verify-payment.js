@@ -1,90 +1,57 @@
-import { getSession } from 'next-auth/react';
-import { query } from '../../../utils/dbServer';
+import { updateOrderStatus } from '../../../utils/supabaseDb';
+import { withAuth } from '../../../middleware/auth';
 
-export default async function handler(req, res) {
-  // Solo permitir método POST
+const handler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Método no permitido' });
   }
   
   try {
-    // Verificar sesión y rol de administrador
-    const session = await getSession({ req });
-    
-    if (!session) {
-      return res.status(401).json({ success: false, message: 'No autorizado' });
-    }
-    
-    // Verificar si el usuario es administrador
-    const userEmail = session.user.email;
-    const userResult = await query(
-      'SELECT role FROM users WHERE email = ?',
-      [userEmail]
-    );
-    
-    if (!userResult || userResult.length === 0 || userResult[0].role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Acceso denegado' });
-    }
-    
-    // Obtener datos del cuerpo
+    // Obtener datos del cuerpo con validación
     const { orderId, verificationNote } = req.body;
     
     if (!orderId) {
-      return res.status(400).json({ success: false, message: 'ID de orden no proporcionado' });
-    }
-    
-    // Iniciar transacción
-    await query('START TRANSACTION');
-    
-    try {
-      // Actualizar el estado del recibo de pago
-      await query(
-        `UPDATE payment_receipts 
-         SET verification_status = 'verified', 
-             admin_notes = ?,
-             verification_date = NOW()
-         WHERE order_id = ?`,
-        [verificationNote, orderId]
-      );
-      
-      // Actualizar el estado de pago y de la orden
-      await query(
-        `UPDATE orders 
-         SET payment_status = 'completed', 
-             status = 'processing',
-             notes = CONCAT(IFNULL(notes, ''), ?)
-         WHERE id = ?`,
-        ['\n' + (verificationNote ? `Pago verificado: ${verificationNote}` : 'Pago verificado'), orderId]
-      );
-      
-      // Confirmar la transacción
-      await query('COMMIT');
-      
-      // Enviar correo electrónico de confirmación (en una implementación real)
-      // await sendPaymentConfirmationEmail(orderId);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Pago verificado correctamente'
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de orden no proporcionado' 
       });
-      
-    } catch (error) {
-      // Revertir en caso de error
-      await query('ROLLBACK');
-      console.error('Error al verificar el pago:', error);
-      
-      return res.status(500).json({
+    }
+
+    // Actualizar el estado de la orden usando Supabase
+    const updatedOrder = await updateOrderStatus(orderId, 'processing', 'verified');
+    
+    if (!updatedOrder) {
+      return res.status(404).json({
         success: false,
-        message: 'Error al verificar el pago'
+        message: 'Orden no encontrada'
       });
     }
+
+    console.log(`✅ Pago verificado para orden ${orderId} por admin ${req.user.email}`);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Pago verificado exitosamente',
+      order: updatedOrder,
+      verificationNote: verificationNote || 'Pago verificado por administrador'
+    });
     
   } catch (error) {
-    console.error('Error:', error);
-    
+    console.error('Error al verificar pago:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error del servidor'
+      message: 'Error interno del servidor',
+      error: error.message
     });
   }
-} 
+}
+
+// Exportar con protección de administrador y validación
+export default withAuth(handler, { 
+  requireAdmin: true,
+  rateLimit: { windowMs: 60000, maxRequests: 20 },
+  validation: {
+    orderId: { required: true, type: 'uuid' },
+    verificationNote: { required: false, type: 'string', maxLength: 500 }
+  }
+})

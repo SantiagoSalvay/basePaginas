@@ -67,25 +67,56 @@ async function sendVerificationEmail(email, name, token) {
   }
 }
 
-export default async function handler(req, res) {
+import { rateLimit, validateInput, sanitizeInput, securityHeaders } from '../../../middleware/auth';
+
+// Rate limiting para signup (más estricto)
+const signupRateLimit = rateLimit(15 * 60 * 1000, 5) // 5 intentos por 15 minutos
+
+const handler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método no permitido' });
   }
 
   try {
+    // Aplicar headers de seguridad
+    securityHeaders(res);
+    
+    // Aplicar rate limiting
+    await new Promise((resolve, reject) => {
+      signupRateLimit(req, res, (err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
+
     const { name, email, password, phone } = req.body;
 
-    // Validaciones básicas
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Faltan campos requeridos' });
+    // Validación robusta
+    const validation = validateInput({
+      name: { required: true, type: 'string', minLength: 2, maxLength: 100 },
+      email: { required: true, type: 'email' },
+      password: { required: true, type: 'string', minLength: 6, maxLength: 128 },
+      phone: { required: false, type: 'string', maxLength: 20 }
+    })
+
+    const validationResult = validation(req.body)
+    if (!validationResult.isValid) {
+      return res.status(400).json({ 
+        message: 'Datos inválidos',
+        errors: validationResult.errors 
+      });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+    // Sanitizar inputs
+    const sanitizedData = {
+      name: sanitizeInput(name),
+      email: sanitizeInput(email).toLowerCase(),
+      password: password, // No sanitizar contraseñas
+      phone: phone ? sanitizeInput(phone) : null
     }
 
     // Verificar si el correo ya está registrado
-    const existingUser = await getUserByEmail(email);
+    const existingUser = await getUserByEmail(sanitizedData.email);
     if (existingUser) {
       return res.status(400).json({ message: 'Este correo electrónico ya está registrado' });
     }
@@ -100,10 +131,10 @@ export default async function handler(req, res) {
     // Crear nuevo usuario
     const newUser = {
       id: generateUniqueId(),
-      name,
-      email,
+      name: sanitizedData.name,
+      email: sanitizedData.email,
       password: hashedPassword,
-      phone: phone || '',
+      phone: sanitizedData.phone || '',
       role: 'user',
       emailVerified: false,
       verificationToken,
@@ -114,7 +145,7 @@ export default async function handler(req, res) {
     const createdUser = await addUser(newUser);
     
     // Enviar correo de verificación
-    await sendVerificationEmail(email, name, verificationToken);
+    await sendVerificationEmail(sanitizedData.email, sanitizedData.name, verificationToken);
 
     // Responder con éxito, excluyendo la contraseña
     return res.status(201).json({ 
@@ -128,3 +159,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 }
+
+export default handler

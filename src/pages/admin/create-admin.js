@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Head from 'next/head';
+import AdminProtected from '../../components/AdminProtected';
+import AdminDashboardLayout from '../../components/AdminDashboardLayout';
 
-export default function CreateAdminPage() {
+function CreateAdminPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
@@ -52,12 +54,9 @@ export default function CreateAdminPage() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Crear Usuario Administrador | ModaVista</title>
-      </Head>
-
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+    <AdminProtected>
+      <AdminDashboardLayout title="Crear Administrador | ModaVista">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
           <h1 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">
             Crear Usuario Administrador
@@ -158,10 +157,13 @@ export default function CreateAdminPage() {
             </button>
           </form>
         </div>
-      </div>
-    </>
+        </div>
+      </AdminDashboardLayout>
+    </AdminProtected>
   );
 }
+
+export default CreateAdminPage;
 
 // Esto fuerza Next.js a usar SSR para esta página
 export async function getServerSideProps() {
