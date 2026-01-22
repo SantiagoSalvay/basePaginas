@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { verifyCredentials } from "../../../utils/userDbStore";
+import { verifyCredentials, verifyUserToken } from "../../../utils/userDbStore";
 import { initSupabaseDatabase } from "../../../utils/supabaseDb";
 
 // Inicializar la base de datos de Supabase al cargar la aplicación
@@ -18,12 +18,27 @@ export const authOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        verificationToken: { label: "Token", type: "text" }
       },
       async authorize(credentials) {
+        // Login con token de verificación
+        if (credentials?.verificationToken) {
+          try {
+            const result = await verifyUserToken(credentials.verificationToken);
+            if (result.success && result.user) {
+              return result.user;
+            }
+            return null;
+          } catch (error) {
+            console.error("Error verificando token:", error);
+            return null;
+          }
+        }
+
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-        
+
         try {
           // Usar el userDbStore para verificar las credenciales con Supabase
           const user = await verifyCredentials(credentials.email, credentials.password);

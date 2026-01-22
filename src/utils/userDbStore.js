@@ -40,21 +40,21 @@ export const verifyCredentials = async (email, password) => {
   try {
     console.log(`Intentando verificar credenciales para: ${email}`);
     const user = await getUserByEmail(email);
-    
+
     if (!user) {
       console.log(`Usuario no encontrado para el email: ${email}`);
       return null;
     }
-    
+
     console.log(`Usuario encontrado: ${user.email}, rol: ${user.role}`);
-    
+
     if (user.password) {
       // Verificar si la contraseña coincide
       console.log('Comparando contraseñas...');
       try {
         const passwordMatch = await bcrypt.compare(password, user.password);
         console.log(`Resultado de comparación de contraseñas: ${passwordMatch}`);
-        
+
         if (passwordMatch) {
           // No devolver la contraseña
           const { password, ...userWithoutPassword } = user;
@@ -70,7 +70,7 @@ export const verifyCredentials = async (email, password) => {
     } else {
       console.log('Usuario no tiene contraseña almacenada');
     }
-    
+
     console.log('Fallo en la autenticación');
     return null;
   } catch (error) {
@@ -83,20 +83,20 @@ export const verifyCredentials = async (email, password) => {
 export const addUser = async (userData) => {
   try {
     const { name, email, password, phone, role = 'user', emailVerified = false, verificationToken } = userData;
-    
+
     // Verificar si el email ya existe
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
       throw new Error('El correo electrónico ya está registrado');
     }
-    
+
     // Hashear la contraseña si no está hasheada
     let hashedPassword = password;
     if (!password.startsWith('$2a$') && !password.startsWith('$2b$')) {
       const salt = await bcrypt.genSalt(10);
       hashedPassword = await bcrypt.hash(password, salt);
     }
-    
+
     // Crear usuario usando supabaseDb
     const newUser = await createUser({
       name,
@@ -107,7 +107,7 @@ export const addUser = async (userData) => {
       email_verified: emailVerified,
       verification_token: verificationToken || null
     });
-    
+
     return newUser;
   } catch (error) {
     console.error('Error al agregar usuario:', error);
@@ -122,22 +122,22 @@ export const updateUser = async (id, userData) => {
     if (!user) {
       throw new Error('Usuario no encontrado');
     }
-    
+
     // Preparar datos para actualizar
     const updateData = { ...userData };
-    
+
     // Hashear la contraseña si se proporciona y no está hasheada
     if (updateData.password && !updateData.password.startsWith('$2a$') && !updateData.password.startsWith('$2b$')) {
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(updateData.password, salt);
     }
-    
+
     // Convertir emailVerified a email_verified
     if ('emailVerified' in updateData) {
       updateData.email_verified = updateData.emailVerified;
       delete updateData.emailVerified;
     }
-    
+
     // Usar supabaseDb para actualizar
     return await updateSupabaseUser(id, updateData);
   } catch (error) {
@@ -153,7 +153,7 @@ export const deleteUser = async (id) => {
       .from('users')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
     return true;
   } catch (error) {
@@ -170,15 +170,15 @@ export const verifyUserToken = async (token) => {
       .from('users')
       .select('*')
       .eq('verification_token', token);
-    
+
     if (searchError) throw searchError;
-    
+
     if (!users || users.length === 0) {
       return { success: false, message: 'Token inválido o expirado' };
     }
-    
+
     const user = users[0];
-    
+
     // Actualizar el estado de verificación del usuario
     const { error: updateError } = await supabaseAdmin
       .from('users')
@@ -188,16 +188,17 @@ export const verifyUserToken = async (token) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
-    
+
     if (updateError) throw updateError;
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       message: 'Correo verificado exitosamente',
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     };
   } catch (error) {
