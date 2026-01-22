@@ -25,13 +25,13 @@ async function sendVerificationEmail(email, name, token) {
         pass: process.env.EMAIL_PASSWORD
       }
     });
-    
+
     // URL base de la aplicación
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    
+
     // URL de verificación
     const verificationUrl = `${baseUrl}/auth/verify?token=${token}`;
-    
+
     // Contenido del correo
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -54,12 +54,12 @@ async function sendVerificationEmail(email, name, token) {
         </div>
       `
     };
-    
+
     // Enviar correo
     console.log('Enviando correo de verificación a:', email);
     await transporter.sendMail(mailOptions);
     console.log('Correo de verificación enviado a:', email);
-    
+
     return true;
   } catch (error) {
     console.error('Error al enviar correo de verificación:', error);
@@ -70,7 +70,7 @@ async function sendVerificationEmail(email, name, token) {
 import { rateLimit, validateInput, sanitizeInput, securityHeaders } from '../../../middleware/auth';
 
 // Rate limiting para signup (más estricto)
-const signupRateLimit = rateLimit(15 * 60 * 1000, 5) // 5 intentos por 15 minutos
+const signupRateLimit = rateLimit(15 * 60 * 1000, 50) // 50 intentos por 15 minutos
 
 const handler = async (req, res) => {
   if (req.method !== 'POST') {
@@ -80,7 +80,7 @@ const handler = async (req, res) => {
   try {
     // Aplicar headers de seguridad
     securityHeaders(res);
-    
+
     // Aplicar rate limiting
     await new Promise((resolve, reject) => {
       signupRateLimit(req, res, (err) => {
@@ -101,9 +101,9 @@ const handler = async (req, res) => {
 
     const validationResult = validation(req.body)
     if (!validationResult.isValid) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Datos inválidos',
-        errors: validationResult.errors 
+        errors: validationResult.errors
       });
     }
 
@@ -123,11 +123,11 @@ const handler = async (req, res) => {
 
     // Generar token de verificación
     const verificationToken = generateVerificationToken();
-    
+
     // Hashear la contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
+
     // Crear nuevo usuario
     const newUser = {
       id: generateUniqueId(),
@@ -143,17 +143,17 @@ const handler = async (req, res) => {
 
     // Guardar usuario usando el userDbStore
     const createdUser = await addUser(newUser);
-    
+
     // Enviar correo de verificación
     await sendVerificationEmail(sanitizedData.email, sanitizedData.name, verificationToken);
 
     // Responder con éxito, excluyendo la contraseña
-    return res.status(201).json({ 
-      message: 'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.', 
+    return res.status(201).json({
+      message: 'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.',
       user: createdUser,
       requiresVerification: true
     });
-    
+
   } catch (error) {
     console.error('Error al registrar usuario:', error);
     return res.status(500).json({ message: 'Error interno del servidor' });
