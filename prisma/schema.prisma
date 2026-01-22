@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                 String    @db.VarChar(100)
+  email                String    @unique @db.VarChar(100)
+  password             String    @db.VarChar(100)
+  phone                String?   @db.VarChar(20)
+  role                 String    @default("user") @db.VarChar(20)
+  emailVerified        Boolean   @default(false) @map("email_verified")
+  verificationToken    String?   @map("verification_token") @db.VarChar(100)
+  resetToken           String?   @map("reset_token") @db.VarChar(100)
+  resetTokenExpires    DateTime? @map("reset_token_expires") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relaciones
+  addresses UserAddress[]
+  orders    Order[]
+
+  @@map("users")
+}
+
+model UserAddress {
+  id         Int      @id @default(autoincrement())
+  userId     String   @map("user_id") @db.Uuid
+  name       String   @db.VarChar(100)
+  email      String   @db.VarChar(100)
+  address    String   @db.VarChar(255)
+  city       String   @db.VarChar(100)
+  state      String   @db.VarChar(100)
+  postalCode String   @map("postal_code") @db.VarChar(20)
+  phone      String   @db.VarChar(20)
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relaciones
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_addresses")
+}
+
+model Order {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  totalAmount     Decimal  @map("total_amount") @db.Decimal(10, 2)
+  currency        String   @default("USD") @db.VarChar(3)
+  status          String   @default("pending") @db.VarChar(50)
+  paymentMethod   String   @default("pending") @map("payment_method") @db.VarChar(50)
+  paymentStatus   String   @default("pending") @map("payment_status") @db.VarChar(50)
+  shippingAddress Json?    @map("shipping_address")
+  items           Json?
+  discountApplied Decimal  @default(0) @map("discount_applied") @db.Decimal(10, 2)
+  receiptImage    String?  @map("receipt_image") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relaciones
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  category    String?  @db.VarChar(100)
+  imageUrl    String?  @map("image_url") @db.VarChar(500)
+  stock       Int      @default(0)
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("products")
+}
