@@ -1,5 +1,5 @@
 // src/pages/api/user/update-profile.js
-import { getUserByEmail, updateUser } from '../../../utils/userStore';
+import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
 
 export default async function handler(req, res) {
   // Solo permitir método POST

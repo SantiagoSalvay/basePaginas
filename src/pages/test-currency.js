@@ -104,3 +104,10 @@ const TestCurrencyPage = () => {
 };
 
 export default TestCurrencyPage;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
+}

@@ -9,7 +9,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AnimatedSection from "../components/AnimatedSection";
 
-export default function Nosotros() {
+function Nosotros() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -292,4 +292,13 @@ export default function Nosotros() {
       <Footer />
     </div>
   );
+}
+
+export default Nosotros;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 }

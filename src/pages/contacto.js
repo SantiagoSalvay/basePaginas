@@ -12,7 +12,7 @@ import Footer from "../components/Footer";
 import AnimatedSection from "../components/AnimatedSection";
 import ContactForm from "../components/ContactForm";
 
-export default function Contacto() {
+function Contacto() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -173,4 +173,13 @@ export default function Contacto() {
       </div>
     </div>
   );
+}
+
+export default Contacto;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 }

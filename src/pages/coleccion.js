@@ -13,7 +13,7 @@ import ProductCard from "../components/ProductCard";
 import AnimatedSection from "../components/AnimatedSection";
 import CategoryBar from "../components/CategoryBar";
 
-export default function Coleccion() {
+function Coleccion() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("Todos");
@@ -184,4 +184,13 @@ export default function Coleccion() {
       <Footer />
     </div>
   );
+}
+
+export default Coleccion;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 }

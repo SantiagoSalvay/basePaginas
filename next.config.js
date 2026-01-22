@@ -15,10 +15,8 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Configuración para evitar problemas de SSG
-  experimental: {
-    forceSwcTransforms: true,
-  },
+  // Configuración optimizada para producción
+  experimental: {},
   poweredByHeader: false,
   // Deshabilitar SSG para rutas problemáticas
   exportPathMap: undefined,

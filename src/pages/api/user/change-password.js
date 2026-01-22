@@ -1,5 +1,5 @@
 // src/pages/api/user/change-password.js
-import { getUserByEmail, updateUser } from '../../../utils/userStore';
+import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {

@@ -1,56 +1,36 @@
-import { getSession } from 'next-auth/react';
-import { query } from '../../../utils/dbServer';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
+import { getUserByEmail } from '../../../utils/supabaseDb';
+import { withAuth } from '../../../middleware/auth';
 
-export default async function handler(req, res) {
-  // Solo permitir método GET
+const handler = async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Método no permitido' });
   }
 
   try {
-    // Verificar la sesión del usuario
-    const session = await getSession({ req });
+    // El usuario ya está disponible en req.user gracias al middleware
+    const userData = req.user;
     
-    if (!session) {
-      return res.status(401).json({ message: 'No autorizado' });
-    }
-
-    // Asegurarnos de que tenemos un email de usuario válido
-    const userEmail = session.user.email;
+    // Remover información sensible
+    const { password, ...safeUserData } = userData;
     
-    if (!userEmail) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'No se pudo identificar al usuario' 
-      });
-    }
-    
-    // Obtener los datos del usuario
-    const userResult = await query(
-      'SELECT id, name, email, phone, role FROM users WHERE email = ?',
-      [userEmail]
-    );
-    
-    if (!userResult || userResult.length === 0) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Usuario no encontrado' 
-      });
-    }
-    
-    // Devolver los datos del usuario (excluyendo datos sensibles como contraseña)
-    const userData = userResult[0];
-
-    return res.status(200).json({ 
-      success: true, 
-      userData
+    return res.status(200).json({
+      success: true,
+      user: safeUserData
     });
     
   } catch (error) {
     console.error('Error al obtener datos del usuario:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Error al obtener datos del usuario' 
+      message: 'Error interno del servidor'
     });
   }
-} 
+}
+
+// Exportar con protección de autenticación
+export default withAuth(handler, { 
+  requireAdmin: false,
+  rateLimit: { windowMs: 60000, maxRequests: 100 }
+})
