@@ -97,16 +97,26 @@ ModaVista está en constante evolución, añadiendo nuevas características y me
 
 ## Tecnologías Utilizadas
 
-- **Next.js**: Framework de React para la construcción de aplicaciones web.
-- **NextAuth**: Para la gestión de la autenticación de usuarios.
-- **Nodemailer**: Para el envío de correos electrónicos de confirmación.
-- **Framer Motion**: Para animaciones en la interfaz de usuario.
-- **Tailwind CSS**: Para el diseño responsivo y estilizado de la aplicación.
+- **Next.js 16**: Framework de React para la construcción de aplicaciones web modernas y optimizadas.
+- **React 19**: Biblioteca para construir interfaces de usuario interactivas.
+- **Supabase**: Plataforma Backend-as-a-Service utilizada como base de datos principal y gestión de usuarios.
+- **NextAuth.js**: Solución completa y segura para la autenticación de usuarios.
+- **Tailwind CSS**: Framework de utilidad para un diseño rápido, responsivo y personalizado.
+- **Framer Motion**: Librería potente para crear animaciones fluidas y complejas.
+- **Nodemailer**: Servicio para el envío de correos electrónicos transaccionales (verificación de cuenta, recuperación de contraseña).
+- **Prisma**: ORM de última generación para Node.js y TypeScript (utilizado para esquemas y migraciones).
+- **SWR**: Biblioteca para la obtención de datos remotos con caché y revalidación.
+- **React Hot Toast**: Notificaciones tipo toast ligeras y personalizables.
+- **React Icons**: Colección completa de iconos populares (FontAwesome, Material, etc.).
+- **Otras Utilidades**: 
+  - **UUID**: Generación de identificadores únicos universales.
+  - **Bcryptjs**: Encriptación segura de contraseñas.
+  - **Axios**: Cliente HTTP para realizar peticiones.
 
 ## Estructura del Proyecto
 
 ```
-SAAS/
+basePaginas/
 ├── src/
 │   ├── components/         # Componentes reutilizables de la interfaz
 │   ├── pages/              # Páginas de la aplicación
@@ -127,7 +137,7 @@ SAAS/
    ```
 2. Navega a la carpeta del proyecto:
    ```bash
-   cd SAAS
+   cd basePaginas
    ```
 3. Instala las dependencias:
    ```bash
@@ -135,8 +145,22 @@ SAAS/
    ```
 4. Configura las variables de entorno en un archivo `.env`:
    ```
+   # Configuración de base de datos (Supabase)
+   NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_de_supabase
+   SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_de_supabase
+
+   # Configuración de correo (Nodemailer)
    EMAIL_USER=tu_correo@gmail.com
-   EMAIL_PASS=tu_contraseña
+   EMAIL_PASSWORD=tu_contraseña_de_aplicacion
+   
+   # Configuración de NextAuth
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=tu_secreto_generado_con_openssl
+   
+   # Configuración de Google (Opcional)
+   GOOGLE_CLIENT_ID=tu_client_id
+   GOOGLE_CLIENT_SECRET=tu_client_secret
    ```
 5. Inicia el servidor de desarrollo:
    ```bash
