@@ -1,45 +1,6 @@
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
-
-// Ruta al archivo JSON de usuarios
-const usersFilePath = path.join(process.cwd(), 'data', 'users.json');
-
-// Función para leer usuarios
-const getUsers = () => {
-  try {
-    // Verificar si el directorio existe, si no, crearlo
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    // Verificar si el archivo existe, si no, crearlo con estructura básica
-    if (!fs.existsSync(usersFilePath)) {
-      const initialData = { users: [] };
-      fs.writeFileSync(usersFilePath, JSON.stringify(initialData, null, 2), 'utf8');
-      return initialData;
-    }
-    
-    const fileData = fs.readFileSync(usersFilePath, 'utf8');
-    return JSON.parse(fileData);
-  } catch (error) {
-    console.error('Error al leer el archivo de usuarios:', error);
-    return { users: [] };
-  }
-};
-
-// Función para guardar usuarios
-const saveUsers = (users) => {
-  try {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error al guardar el archivo de usuarios:', error);
-    return false;
-  }
-};
+import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
 
 // Función para enviar correo de verificación
 async function sendVerificationEmail(email, name, token) {
@@ -111,51 +72,40 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'El correo electrónico es requerido' });
     }
 
-    // Obtener usuarios
-    const usersData = getUsers();
-    
     // Buscar el usuario por email
-    const user = usersData.users.find(u => u.email === email);
-    
+    const user = await getUserByEmail(email);
+
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    
-    if (user.emailVerified) {
+
+    // Verificar si ya está verificado
+    // Supabase devuelve columnas en snake_case
+    if (user.email_verified) {
       return res.status(400).json({ error: 'El correo ya ha sido verificado' });
     }
-    
+
     // Generar nuevo token de verificación
     const newToken = uuidv4();
-    
+
     // Actualizar token de verificación del usuario
-    const updatedUsers = {
-      ...usersData,
-      users: usersData.users.map(u => {
-        if (u.email === email) {
-          return {
-            ...u,
-            verificationToken: newToken,
-          };
-        }
-        return u;
-      }),
+    const updateData = {
+      verification_token: newToken
     };
-    
-    // Guardar usuarios actualizados
-    const saved = saveUsers(updatedUsers);
-    
-    if (!saved) {
+
+    const updatedUser = await updateUser(user.id, updateData);
+
+    if (!updatedUser) {
       return res.status(500).json({ error: 'Error al actualizar el token de verificación' });
     }
-    
+
     // Enviar correo de verificación
     const emailSent = await sendVerificationEmail(email, user.name, newToken);
-    
+
     if (!emailSent) {
       return res.status(500).json({ error: 'Error al enviar el correo de verificación' });
     }
-    
+
     return res.status(200).json({ success: true, message: 'Correo de verificación reenviado correctamente' });
   } catch (error) {
     console.error('Error en el endpoint de reenvío de verificación:', error);

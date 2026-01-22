@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { getUserByEmail as getSupabaseUserByEmail, getUserById as getSupabaseUserById, createUser, updateUser as updateSupabaseUser } from './supabaseDb';
+import { getUserByEmail as getSupabaseUserByEmail, getUserById as getSupabaseUserById, createUser, updateUser as updateSupabaseUser, getUserByResetToken as getSupabaseUserByResetToken } from './supabaseDb';
 import { supabaseAdmin } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,6 +31,15 @@ export const getUserById = async (id) => {
     return await getSupabaseUserById(id);
   } catch (error) {
     console.error('Error al obtener usuario por ID:', error);
+  }
+};
+
+// Obtener usuario por token de recuperación
+export const getUserByResetToken = async (token) => {
+  try {
+    return await getSupabaseUserByResetToken(token);
+  } catch (error) {
+    console.error('Error al obtener usuario por token de recuperación:', error);
     throw error;
   }
 };

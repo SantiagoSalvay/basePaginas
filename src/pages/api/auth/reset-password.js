@@ -1,44 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcryptjs';
-
-// Ruta al archivo JSON de usuarios
-const usersFilePath = path.join(process.cwd(), 'data', 'users.json');
-
-// Función para leer usuarios
-const getUsers = () => {
-  try {
-    // Verificar si el directorio existe, si no, crearlo
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    // Verificar si el archivo existe, si no, crearlo con estructura básica
-    if (!fs.existsSync(usersFilePath)) {
-      const initialData = { users: [] };
-      fs.writeFileSync(usersFilePath, JSON.stringify(initialData, null, 2), 'utf8');
-      return initialData;
-    }
-    
-    const fileData = fs.readFileSync(usersFilePath, 'utf8');
-    return JSON.parse(fileData);
-  } catch (error) {
-    console.error('Error al leer el archivo de usuarios:', error);
-    return { users: [] };
-  }
-};
-
-// Función para guardar usuarios
-const saveUsers = (users) => {
-  try {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error al guardar el archivo de usuarios:', error);
-    return false;
-  }
-};
+import { getUserByResetToken, updateUser } from '../../../utils/userDbStore';
 
 export default async function handler(req, res) {
   // Solo permitir solicitudes POST
@@ -57,52 +17,37 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
-    // Obtener usuarios
-    const usersData = getUsers();
-    
-    // Buscar el usuario por token
-    const user = usersData.users.find(u => u.resetToken === token);
-    
+    // Buscar el usuario por token usando Supabase
+    const user = await getUserByResetToken(token);
+
     if (!user) {
       return res.status(400).json({ error: 'Token inválido' });
     }
-    
+
     // Verificar si el token ha expirado
-    if (user.resetTokenExpiry) {
-      const expiryDate = new Date(user.resetTokenExpiry);
+    if (user.reset_token_expires) {
+      const expiryDate = new Date(user.reset_token_expires);
       const now = new Date();
-      
+
       if (now > expiryDate) {
         return res.status(400).json({ error: 'Token expirado' });
       }
     }
-    
-    // Hashear la nueva contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Actualizar usuario con nueva contraseña y eliminar tokens de restablecimiento
-    const updatedUsers = {
-      ...usersData,
-      users: usersData.users.map(u => {
-        if (u.resetToken === token) {
-          return {
-            ...u,
-            password: hashedPassword,
-            resetToken: null,
-            resetTokenExpiry: null,
-          };
-        }
-        return u;
-      }),
+    // userDbStore.updateUser se encargará de hashear la contraseña si no está hasheada
+    const updateData = {
+      password: password,
+      reset_token: null,
+      reset_token_expires: null
     };
-    
-    // Guardar usuarios actualizados
-    const saved = saveUsers(updatedUsers);
-    
-    if (!saved) {
+
+    const updatedUser = await updateUser(user.id, updateData);
+
+    if (!updatedUser) {
       return res.status(500).json({ error: 'Error al actualizar la contraseña' });
     }
-    
+
     return res.status(200).json({ success: true, message: 'Contraseña actualizada correctamente' });
   } catch (error) {
     console.error('Error al restablecer contraseña:', error);

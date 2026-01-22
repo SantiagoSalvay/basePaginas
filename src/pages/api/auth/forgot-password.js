@@ -1,57 +1,18 @@
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
-
-// Ruta al archivo JSON de usuarios
-const usersFilePath = path.join(process.cwd(), 'data', 'users.json');
-
-// Función para leer usuarios
-const getUsers = () => {
-  try {
-    // Verificar si el directorio existe, si no, crearlo
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    // Verificar si el archivo existe, si no, crearlo con estructura básica
-    if (!fs.existsSync(usersFilePath)) {
-      const initialData = { users: [] };
-      fs.writeFileSync(usersFilePath, JSON.stringify(initialData, null, 2), 'utf8');
-      return initialData;
-    }
-    
-    const fileData = fs.readFileSync(usersFilePath, 'utf8');
-    return JSON.parse(fileData);
-  } catch (error) {
-    console.error('Error al leer el archivo de usuarios:', error);
-    return { users: [] };
-  }
-};
-
-// Función para guardar usuarios
-const saveUsers = (users) => {
-  try {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error al guardar el archivo de usuarios:', error);
-    return false;
-  }
-};
+import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
 
 // Función para enviar correo de recuperación de contraseña
 async function sendPasswordResetEmail(email, name, token) {
   console.log('Iniciando envío de correo de recuperación a:', email);
-  
+
   try {
     // Configurar el transportador de correo
     console.log('Configurando transportador de correo con:', {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD ? '********' : 'No configurado'
     });
-    
+
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -128,60 +89,47 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'El correo electrónico es requerido' });
     }
 
-    // Obtener usuarios
-    const usersData = getUsers();
-    console.log('Usuarios encontrados:', usersData.users.length);
-    
-    // Buscar el usuario por email
-    const user = usersData.users.find(u => u.email === email);
-    
+    // Buscar el usuario por email usando Supabase
+    const user = await getUserByEmail(email);
+
     if (!user) {
       console.log('Usuario no encontrado para el correo:', email);
       // Por seguridad, no revelamos si el correo existe o no
       return res.status(200).json({ success: true, message: 'Si el correo existe, se enviará un enlace de recuperación' });
     }
-    
+
     console.log('Usuario encontrado:', user.name);
-    
+
     // Generar token de restablecimiento
     const resetToken = uuidv4();
     const resetTokenExpiry = new Date();
     resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Expira en 1 hora
     console.log('Token generado:', resetToken);
-    
+
     // Actualizar usuario con token de restablecimiento
-    const updatedUsers = {
-      ...usersData,
-      users: usersData.users.map(u => {
-        if (u.email === email) {
-          return {
-            ...u,
-            resetToken,
-            resetTokenExpiry: resetTokenExpiry.toISOString(),
-          };
-        }
-        return u;
-      }),
+    // Nota: Supabase usa snake_case para las columnas
+    const updateData = {
+      reset_token: resetToken,
+      reset_token_expires: resetTokenExpiry.toISOString(),
     };
-    
-    // Guardar usuarios actualizados
-    const saved = saveUsers(updatedUsers);
-    
-    if (!saved) {
+
+    const updatedUser = await updateUser(user.id, updateData);
+
+    if (!updatedUser) {
       console.error('Error al guardar el token en la base de datos');
       return res.status(500).json({ error: 'Error al generar el token de recuperación' });
     }
-    
+
     console.log('Token guardado correctamente');
-    
+
     // Enviar correo de recuperación
     const emailSent = await sendPasswordResetEmail(email, user.name, resetToken);
-    
+
     if (!emailSent) {
       console.error('Error al enviar el correo de recuperación');
       return res.status(500).json({ error: 'Error al enviar el correo de recuperación' });
     }
-    
+
     console.log('Proceso de recuperación completado correctamente');
     return res.status(200).json({ success: true, message: 'Correo de recuperación enviado correctamente' });
   } catch (error) {

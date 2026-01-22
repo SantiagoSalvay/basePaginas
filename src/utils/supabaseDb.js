@@ -48,7 +48,7 @@ export const getUserByEmail = async (email) => {
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
       handleSupabaseError(error, 'getUserByEmail')
     }
-    
+
     return data
   } catch (error) {
     handleSupabaseError(error, 'getUserByEmail')
@@ -66,12 +66,31 @@ export const getUserById = async (id) => {
     if (error && error.code !== 'PGRST116') {
       handleSupabaseError(error, 'getUserById')
     }
-    
+
     return data
   } catch (error) {
     handleSupabaseError(error, 'getUserById')
   }
 }
+
+export const getUserByResetToken = async (token) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('reset_token', token)
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      handleSupabaseError(error, 'getUserByResetToken')
+    }
+
+    return data
+  } catch (error) {
+    handleSupabaseError(error, 'getUserByResetToken')
+  }
+}
+
 
 export const updateUser = async (id, updateData) => {
   try {
@@ -201,7 +220,7 @@ export const getOrderById = async (id) => {
     if (error && error.code !== 'PGRST116') {
       handleSupabaseError(error, 'getOrderById')
     }
-    
+
     return data
   } catch (error) {
     handleSupabaseError(error, 'getOrderById')
@@ -250,7 +269,7 @@ export const updateOrderStatus = async (id, status, paymentStatus = null) => {
       status,
       updated_at: new Date().toISOString()
     }
-    
+
     if (paymentStatus) {
       updateData.payment_status = paymentStatus
     }
@@ -300,7 +319,7 @@ export const rollbackTransaction = async () => {
 export const query = async (table, operation, data = null, filters = {}) => {
   try {
     let queryBuilder = supabaseAdmin.from(table)
-    
+
     switch (operation) {
       case 'select':
         queryBuilder = queryBuilder.select(data || '*')
@@ -317,14 +336,14 @@ export const query = async (table, operation, data = null, filters = {}) => {
       default:
         throw new Error(`Unsupported operation: ${operation}`)
     }
-    
+
     // Aplicar filtros
     Object.entries(filters).forEach(([key, value]) => {
       queryBuilder = queryBuilder.eq(key, value)
     })
-    
+
     const { data: result, error } = await queryBuilder
-    
+
     if (error) handleSupabaseError(error, `${operation} on ${table}`)
     return result
   } catch (error) {
