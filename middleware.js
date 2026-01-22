@@ -52,7 +52,12 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    // Proteger todas las rutas excepto las públicas específicas
-    '/((?!api/auth|api/products|api/featured-products|api/test|_next/static|_next/image|favicon.ico|public|uploads).*)',
+    // Solo proteger rutas específicas para evitar problemas de build
+    '/admin/:path*',
+    '/user/:path*',
+    '/api/admin/:path*',
+    '/api/user/:path*',
+    '/api/orders/:path*',
+    '/api/payment/:path*',
   ],
 }

@@ -14,6 +14,18 @@ const nextConfig = {
       },
     ],
     unoptimized: true,
+  },
+  // Configuración para evitar problemas de SSG
+  experimental: {
+    forceSwcTransforms: true,
+  },
+  poweredByHeader: false,
+  // Deshabilitar SSG para rutas problemáticas
+  exportPathMap: undefined,
+  trailingSlash: false,
+  // Configuración específica para deployment
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   }
 }
 

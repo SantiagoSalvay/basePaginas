@@ -433,4 +433,11 @@ const ProductDetail = () => {
   );
 };
 
-export default ProductDetail; 
+export default ProductDetail;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
+} 
