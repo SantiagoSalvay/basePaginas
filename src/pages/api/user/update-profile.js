@@ -16,20 +16,20 @@ export default async function handler(req, res) {
     }
 
     // Buscar el usuario por email
-    const user = getUserByEmail(email);
-    
+    const user = await getUserByEmail(email);
+
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
     // Actualizar la información del usuario
-    const updatedUser = updateUser(user.id, {
+    const updatedUser = await updateUser(user.id, {
       name,
       phone: phone || '',
     });
 
     // Responder con éxito
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: 'Información actualizada correctamente',
       user: {
         name: updatedUser.name,
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
         phone: updatedUser.phone
       }
     });
-    
+
   } catch (error) {
     console.error('Error al actualizar perfil:', error);
     return res.status(500).json({ message: 'Error interno del servidor' });

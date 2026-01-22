@@ -58,18 +58,28 @@ export const authOptions = {
     newUser: "/auth/new-user",
   },
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user, trigger, session }) {
       if (account) {
         token.accessToken = account.access_token;
       }
       if (user) {
         token.role = user.role;
+        token.phone = user.phone;
+        token.id = user.id;
+      }
+      // Actualizar token cuando se actualiza la sesión desde el cliente
+      if (trigger === "update" && session) {
+        token.name = session.name || token.name;
+        token.email = session.email || token.email;
+        token.phone = session.phone || token.phone;
       }
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.user.role = token.role;
+      session.user.phone = token.phone;
+      session.user.id = token.id;
       return session;
     },
   },

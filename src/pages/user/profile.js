@@ -5,13 +5,14 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiShoppingBag, FiUser, FiClock, FiHeart, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiShoppingBag, FiUser, FiClock, FiHeart, FiSettings, FiLogOut, FiSave } from 'react-icons/fi';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import PageTransition from '../../components/PageTransition';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import { formatPrice } from '../../utils/currencyUtils';
+import { toast } from 'react-hot-toast';
 
 const ProfileTabs = {
   CART: 'cart',
@@ -22,17 +23,77 @@ const ProfileTabs = {
 
 const UserProfile = () => {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [activeTab, setActiveTab] = useState(ProfileTabs.CART);
   const { cartItems, cartCount, removeFromCart, updateQuantity, clearCart, getSubtotal } = useCart();
   const { currency, t } = useCurrency();
 
-  // Protección de ruta
+  // Estados para el formulario de perfil
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // Protección de ruta y carga de datos iniciales
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/auth/signin');
+    } else if (session?.user) {
+      setProfileData({
+        name: session.user.name || '',
+        email: session.user.email || '',
+        phone: session.user.phone || ''
+      });
     }
-  }, [status, router]);
+  }, [status, router, session]);
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setLoadingProfile(true);
+
+    try {
+      const response = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al actualizar perfil');
+      }
+
+      // Actualizar la sesión con los nuevos datos
+      await update({
+        ...session,
+        user: {
+          ...session.user,
+          name: profileData.name,
+          phone: profileData.phone
+        }
+      });
+
+      toast.success('Perfil actualizado correctamente');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(error.message || 'Error al actualizar el perfil');
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
 
   // Para obtener la URL de imagen según su formato
   const getImageUrl = (imageUrl) => {
@@ -83,13 +144,13 @@ const UserProfile = () => {
         <>
           <div className="max-h-96 overflow-y-auto pr-2">
             {cartItems.map((item) => (
-              <div 
+              <div
                 key={`${item.id}-${item.size || 'default'}`}
                 className="flex items-center mb-4 pb-4 border-b border-gray-200 dark:border-gray-700"
               >
                 <div className="relative w-16 h-20 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden">
-                  <Image 
-                    src={getImageUrl(item.image)} 
+                  <Image
+                    src={getImageUrl(item.image)}
                     alt={item.name}
                     layout="fill"
                     objectFit="cover"
@@ -99,7 +160,7 @@ const UserProfile = () => {
                 <div className="ml-4 flex-1">
                   <div className="flex justify-between">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</h4>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.id, item.size)}
                       className="text-gray-500 hover:text-red-600"
                       aria-label="Remove"
@@ -107,22 +168,22 @@ const UserProfile = () => {
                       &times;
                     </button>
                   </div>
-                  
+
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {item.category}
                     {item.size && ` · ${t('size')}: ${item.size}`}
                   </p>
-                  
+
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded">
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
                         className="px-2 py-1 text-gray-600 dark:text-gray-400"
                       >
                         -
                       </button>
                       <span className="px-2 text-sm">{item.quantity}</span>
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
                         className="px-2 py-1 text-gray-600 dark:text-gray-400"
                       >
@@ -191,65 +252,82 @@ const UserProfile = () => {
   const renderSettings = () => (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('settings')}</h3>
-      
+
       <div className="space-y-6">
-        <div>
-          <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">{t('personalInformation')}</h4>
+        <form onSubmit={handleUpdateProfile}>
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="text-md font-medium text-gray-900 dark:text-white">{t('personalInformation')}</h4>
+            <button
+              type="submit"
+              disabled={loadingProfile}
+              className="flex items-center text-sm bg-primary-600 text-white px-3 py-1.5 rounded-md hover:bg-primary-700 disabled:opacity-50"
+            >
+              <FiSave className="mr-1.5" />
+              {loadingProfile ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('firstName')}</label>
-              <input 
-                type="text" 
-                value={session.user.name?.split(' ')[0] || ''} 
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                readOnly
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</label>
+              <input
+                type="text"
+                name="name"
+                value={profileData.name}
+                onChange={handleProfileChange}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('lastName')}</label>
-              <input 
-                type="text" 
-                value={session.user.name?.split(' ')[1] || ''} 
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                readOnly
-              />
-            </div>
+
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('email')}</label>
-              <input 
-                type="email" 
-                value={session.user.email || ''} 
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                readOnly
+              <input
+                type="email"
+                name="email"
+                value={profileData.email}
+                onChange={handleProfileChange}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Teléfono</label>
+              <input
+                type="tel"
+                name="phone"
+                value={profileData.phone}
+                onChange={handleProfileChange}
+                placeholder="+54 9 ..."
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>
-        </div>
-        
+        </form>
+
         <div>
           <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">{t('changePassword')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('currentPassword')}</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
+              <input
+                type="password"
+                placeholder="••••••••"
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('newPassword')}</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
+              <input
+                type="password"
+                placeholder="••••••••"
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">{t('confirmPassword')}</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
+              <input
+                type="password"
+                placeholder="••••••••"
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
@@ -289,7 +367,7 @@ const UserProfile = () => {
 
         <main className="container mx-auto px-4 pt-20 pb-10">
           <div className="max-w-6xl mx-auto">
-            
+
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-2">
@@ -299,7 +377,7 @@ const UserProfile = () => {
                 {t('welcome')}, {session.user.name}
               </p>
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-6">
               {/* Sidebar */}
               <div className="md:w-1/4">
@@ -327,15 +405,14 @@ const UserProfile = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <nav className="space-y-1">
                     <button
                       onClick={() => setActiveTab(ProfileTabs.CART)}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        activeTab === ProfileTabs.CART 
-                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' 
-                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${activeTab === ProfileTabs.CART
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       <FiShoppingBag className="mr-3 flex-shrink-0" />
                       <span>{t('cart')}</span>
@@ -345,38 +422,35 @@ const UserProfile = () => {
                         </span>
                       )}
                     </button>
-                    
+
                     <button
                       onClick={() => setActiveTab(ProfileTabs.ORDERS)}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        activeTab === ProfileTabs.ORDERS 
-                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' 
-                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${activeTab === ProfileTabs.ORDERS
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       <FiClock className="mr-3 flex-shrink-0" />
                       <span>{t('myOrders')}</span>
                     </button>
-                    
+
                     <button
                       onClick={() => setActiveTab(ProfileTabs.FAVORITES)}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        activeTab === ProfileTabs.FAVORITES 
-                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' 
-                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${activeTab === ProfileTabs.FAVORITES
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       <FiHeart className="mr-3 flex-shrink-0" />
                       <span>{t('favorites')}</span>
                     </button>
-                    
+
                     <button
                       onClick={() => setActiveTab(ProfileTabs.SETTINGS)}
-                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        activeTab === ProfileTabs.SETTINGS 
-                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' 
-                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium ${activeTab === ProfileTabs.SETTINGS
+                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+                        }`}
                     >
                       <FiSettings className="mr-3 flex-shrink-0" />
                       <span>{t('settings')}</span>
@@ -384,7 +458,7 @@ const UserProfile = () => {
                   </nav>
                 </div>
               </div>
-              
+
               {/* Main Content */}
               <div className="md:w-3/4">
                 <motion.div
