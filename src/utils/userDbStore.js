@@ -1,11 +1,14 @@
 import bcrypt from 'bcryptjs';
-import { query } from './dbServer';
+import { getUserByEmail as getSupabaseUserByEmail, getUserById as getSupabaseUserById, createUser, updateUser as updateSupabaseUser } from './supabaseDb';
+import { supabaseAdmin } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 // Obtener todos los usuarios
 export const getUsers = async () => {
   try {
-    return await query('SELECT * FROM users');
+    const { data, error } = await supabaseAdmin.from('users').select('*');
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     throw error;
@@ -15,8 +18,7 @@ export const getUsers = async () => {
 // Obtener usuario por email
 export const getUserByEmail = async (email) => {
   try {
-    const users = await query('SELECT * FROM users WHERE email = ?', [email]);
-    return users.length > 0 ? users[0] : null;
+    return await getSupabaseUserByEmail(email);
   } catch (error) {
     console.error('Error al obtener usuario por email:', error);
     throw error;
@@ -26,8 +28,7 @@ export const getUserByEmail = async (email) => {
 // Obtener usuario por ID
 export const getUserById = async (id) => {
   try {
-    const users = await query('SELECT * FROM users WHERE id = ?', [id]);
-    return users.length > 0 ? users[0] : null;
+    return await getSupabaseUserById(id);
   } catch (error) {
     console.error('Error al obtener usuario por ID:', error);
     throw error;
@@ -89,9 +90,6 @@ export const addUser = async (userData) => {
       throw new Error('El correo electrónico ya está registrado');
     }
     
-    // Generar un ID único si no se proporciona
-    const id = userData.id || uuidv4();
-    
     // Hashear la contraseña si no está hasheada
     let hashedPassword = password;
     if (!password.startsWith('$2a$') && !password.startsWith('$2b$')) {
@@ -99,24 +97,18 @@ export const addUser = async (userData) => {
       hashedPassword = await bcrypt.hash(password, salt);
     }
     
-    // Insertar el nuevo usuario
-    await query(
-      `INSERT INTO users (id, name, email, password, phone, role, email_verified, verification_token, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [id, name, email, hashedPassword, phone || null, role, emailVerified ? 1 : 0, verificationToken || null]
-    );
-    
-    // Devolver el usuario creado (sin la contraseña)
-    return {
-      id,
+    // Crear usuario usando supabaseDb
+    const newUser = await createUser({
       name,
       email,
-      phone,
+      password: hashedPassword,
+      phone: phone || null,
       role,
-      emailVerified,
-      verificationToken,
-      createdAt: new Date().toISOString()
-    };
+      email_verified: emailVerified,
+      verification_token: verificationToken || null
+    });
+    
+    return newUser;
   } catch (error) {
     console.error('Error al agregar usuario:', error);
     throw error;
@@ -131,45 +123,23 @@ export const updateUser = async (id, userData) => {
       throw new Error('Usuario no encontrado');
     }
     
-    const fieldsToUpdate = [];
-    const params = [];
+    // Preparar datos para actualizar
+    const updateData = { ...userData };
     
-    // Construir la consulta dinámicamente
-    for (const [key, value] of Object.entries(userData)) {
-      // Convertir camelCase a snake_case para los nombres de campos SQL
-      const fieldName = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-      
-      // Manejar casos especiales (campos que requieren transformación)
-      if (key === 'password' && value && !value.startsWith('$2a$') && !value.startsWith('$2b$')) {
-        // Hashear la contraseña si no está hasheada
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(value, salt);
-        fieldsToUpdate.push(`${fieldName} = ?`);
-        params.push(hashedPassword);
-      } else if (key === 'emailVerified') {
-        fieldsToUpdate.push('email_verified = ?');
-        params.push(value ? 1 : 0);
-      } else if (value !== undefined) {
-        fieldsToUpdate.push(`${fieldName} = ?`);
-        params.push(value);
-      }
+    // Hashear la contraseña si se proporciona y no está hasheada
+    if (updateData.password && !updateData.password.startsWith('$2a$') && !updateData.password.startsWith('$2b$')) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password, salt);
     }
     
-    if (fieldsToUpdate.length === 0) {
-      return user; // No hay campos para actualizar
+    // Convertir emailVerified a email_verified
+    if ('emailVerified' in updateData) {
+      updateData.email_verified = updateData.emailVerified;
+      delete updateData.emailVerified;
     }
     
-    // Agregar ID a los parámetros
-    params.push(id);
-    
-    // Ejecutar la consulta de actualización
-    await query(
-      `UPDATE users SET ${fieldsToUpdate.join(', ')} WHERE id = ?`,
-      params
-    );
-    
-    // Obtener y devolver el usuario actualizado
-    return await getUserById(id);
+    // Usar supabaseDb para actualizar
+    return await updateSupabaseUser(id, updateData);
   } catch (error) {
     console.error('Error al actualizar usuario:', error);
     throw error;
@@ -179,8 +149,13 @@ export const updateUser = async (id, userData) => {
 // Eliminar usuario
 export const deleteUser = async (id) => {
   try {
-    const result = await query('DELETE FROM users WHERE id = ?', [id]);
-    return result.affectedRows > 0;
+    const { error } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     throw error;
@@ -190,19 +165,31 @@ export const deleteUser = async (id) => {
 // Verificar token de usuario
 export const verifyUserToken = async (token) => {
   try {
-    const users = await query('SELECT * FROM users WHERE verification_token = ?', [token]);
+    // Buscar usuario por token
+    const { data: users, error: searchError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('verification_token', token);
     
-    if (users.length === 0) {
+    if (searchError) throw searchError;
+    
+    if (!users || users.length === 0) {
       return { success: false, message: 'Token inválido o expirado' };
     }
     
     const user = users[0];
     
     // Actualizar el estado de verificación del usuario
-    await query(
-      'UPDATE users SET email_verified = 1, verification_token = NULL WHERE id = ?',
-      [user.id]
-    );
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        email_verified: true,
+        verification_token: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+    
+    if (updateError) throw updateError;
     
     return { 
       success: true, 

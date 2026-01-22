@@ -3,13 +3,13 @@
     {
       "id": 1001,
       "name": "Camisa Premium",
-      "price": 59.99,
+      "price": 50.99,
       "image": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990",
       "category": "Camisas",
       "originalPrice": 59.99,
       "discount": {
-        "active": false,
-        "percentage": 0
+        "active": true,
+        "percentage": 15
       }
     },
     {
@@ -22,6 +22,20 @@
         "active": false,
         "percentage": 0
       }
+    },
+    {
+      "name": "Messi",
+      "price": 130000,
+      "category": "Camisas",
+      "rating": 3,
+      "image": "/uploads/product_1769051493204.jpg",
+      "sizes": [
+        "XL",
+        "S",
+        "A"
+      ],
+      "currency": "ARS",
+      "id": 1
     }
   ],
   "Pantalones": [

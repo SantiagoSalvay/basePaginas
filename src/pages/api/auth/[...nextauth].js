@@ -2,10 +2,10 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyCredentials } from "../../../utils/userDbStore";
-import { initDatabase } from "../../../utils/dbServer";
+import { initSupabaseDatabase } from "../../../utils/supabaseDb";
 
-// Inicializar la base de datos al cargar la aplicación
-initDatabase().catch(console.error);
+// Inicializar la base de datos de Supabase al cargar la aplicación
+initSupabaseDatabase().catch(console.error);
 
 export const authOptions = {
   providers: [
@@ -25,7 +25,7 @@ export const authOptions = {
         }
         
         try {
-          // Usar el userDbStore para verificar las credenciales con MySQL
+          // Usar el userDbStore para verificar las credenciales con Supabase
           const user = await verifyCredentials(credentials.email, credentials.password);
           return user;
         } catch (error) {
