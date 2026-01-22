@@ -6,8 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "build:ssr": "cross-env NEXT_DISABLE_STATICGEN=true next build",
+    "build:render": "pnpm prisma generate && pnpm run build",
+    "build:full": "pnpm prisma generate && pnpm prisma db push && pnpm run build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^7.3.0",
