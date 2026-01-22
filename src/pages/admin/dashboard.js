@@ -15,7 +15,7 @@ import FeaturedCollection from "../../components/FeaturedCollection";
 import DiscountManager from "../../components/DiscountManager";
 import Modal from "../../components/Modal";
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("add");
   const [products, setProducts] = useState({});
@@ -918,4 +918,13 @@ export default function AdminDashboard() {
       </AdminDashboardLayout>
     </AdminProtected>
   );
+}
+
+export default AdminDashboard;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 }

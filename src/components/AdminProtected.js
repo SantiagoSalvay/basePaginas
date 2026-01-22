@@ -1,17 +1,31 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const AdminProtected = ({ children }) => {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const loading = status === "loading";
 
   useEffect(() => {
-    if (!loading && (!session || session.user.role !== "admin")) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !loading && (!session || session.user.role !== "admin")) {
       router.push("/");
     }
-  }, [session, loading, router]);
+  }, [session, loading, router, mounted]);
+
+  // No renderizar nada durante SSR
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

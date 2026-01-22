@@ -6,7 +6,7 @@ import { FiCheck, FiX, FiEye, FiImage, FiDownload, FiFilter, FiTruck, FiPackage,
 import Layout from '../../components/Layout';
 import Modal from '../../components/Modal';
 
-export default function AdminOrders() {
+function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -722,4 +722,13 @@ export default function AdminOrders() {
       )}
     </Layout>
   );
+}
+
+export default AdminOrders;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 } 
