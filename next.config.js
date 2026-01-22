@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  swcMinify: true,
   images: {
     remotePatterns: [
       {
@@ -12,14 +12,17 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'tramway.proxy.rlwy.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     unoptimized: true,
   },
   // Configuración optimizada para producción
   experimental: {},
   poweredByHeader: false,
-  // Deshabilitar SSG para rutas problemáticas
-  exportPathMap: undefined,
+  // Deshabilitar trailing slash
   trailingSlash: false,
   // Configuración específica para deployment
   env: {
