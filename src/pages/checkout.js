@@ -860,9 +860,9 @@ const Checkout = () => {
 
 export default Checkout;
 
-// Esto fuerza Next.js a usar SSR para esta página
+// Deshabilitar SSG para esta página
 export async function getServerSideProps() {
   return {
-    props: {}, // se pasarán al componente de página
-  }
-} 
+    props: {}
+  };
+}

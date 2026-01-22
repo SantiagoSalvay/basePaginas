@@ -779,3 +779,10 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
+}

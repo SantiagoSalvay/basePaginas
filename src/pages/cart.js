@@ -247,9 +247,9 @@ const Cart = () => {
 
 export default Cart;
 
-// Esto fuerza Next.js a usar SSR para esta página
+// Deshabilitar SSG para esta página
 export async function getServerSideProps() {
   return {
-    props: {}, // se pasarán al componente de página
-  }
-} 
+    props: {}
+  };
+}

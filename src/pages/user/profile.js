@@ -407,4 +407,11 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile; 
+export default UserProfile;
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
+} 

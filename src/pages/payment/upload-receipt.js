@@ -211,4 +211,11 @@ export default function UploadReceiptPage() {
       </main>
     </div>
   );
+}
+
+// Deshabilitar SSG para esta página
+export async function getServerSideProps() {
+  return {
+    props: {}
+  };
 } 
