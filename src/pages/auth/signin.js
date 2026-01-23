@@ -55,11 +55,11 @@ export default function SignIn({ csrfToken }) {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 100, 
+      transition: {
+        type: "spring",
+        stiffness: 100,
         damping: 15,
-        duration: 0.8 
+        duration: 0.8
       },
     },
   };
@@ -69,11 +69,11 @@ export default function SignIn({ csrfToken }) {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 100, 
+      transition: {
+        type: "spring",
+        stiffness: 100,
         damping: 15,
-        duration: 0.8 
+        duration: 0.8
       },
     },
   };
@@ -92,8 +92,8 @@ export default function SignIn({ csrfToken }) {
           className="max-w-4xl w-full flex flex-col md:flex-row bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden"
         >
           {/* Imagen a la izquierda */}
-          <motion.div 
-            variants={slideRight} 
+          <motion.div
+            variants={slideRight}
             className="md:w-1/2 relative hidden md:block min-h-[520px]"
           >
             <div className="relative h-full">
@@ -113,8 +113,8 @@ export default function SignIn({ csrfToken }) {
           </motion.div>
 
           {/* Formulario a la derecha */}
-          <motion.div 
-            variants={slideLeft} 
+          <motion.div
+            variants={slideLeft}
             className="md:w-1/2 px-6 py-6 sm:px-7 min-h-[520px] flex flex-col"
           >
             <div className="text-center mb-5">
@@ -130,7 +130,7 @@ export default function SignIn({ csrfToken }) {
 
             <div className="space-y-3">
               <button
-                onClick={() => signIn("google", { callbackUrl: "/" })}
+                onClick={() => signIn("google", { callbackUrl: "/?welcome=true" })}
                 className="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-800 dark:text-white bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 <FaGoogle className="text-red-500 mr-2" size={18} />

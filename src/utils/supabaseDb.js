@@ -13,20 +13,27 @@ const handleSupabaseError = (error, operation) => {
 export const createUser = async (userData) => {
   try {
     const userId = uuidv4()
+    // Filtrar campos undefined o null para evitar errores de restricción
+    const userToInsert = {
+      id: userId,
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone || null,
+      role: userData.role || 'user',
+      email_verified: userData.email_verified || false,
+      verification_token: userData.verification_token || null,
+      reset_token: userData.reset_token || null,
+      reset_token_expires: userData.reset_token_expires || null
+    };
+
+    // Solo incluir contraseña si existe
+    if (userData.password) {
+      userToInsert.password = userData.password;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('users')
-      .insert([{
-        id: userId,
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        phone: userData.phone || null,
-        role: userData.role || 'user',
-        email_verified: userData.email_verified || false,
-        verification_token: userData.verification_token || null,
-        reset_token: userData.reset_token || null,
-        reset_token_expires: userData.reset_token_expires || null
-      }])
+      .insert([userToInsert])
       .select()
       .single()
 

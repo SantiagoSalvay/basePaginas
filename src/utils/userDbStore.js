@@ -124,6 +124,34 @@ export const addUser = async (userData) => {
   }
 };
 
+// Agregar o recuperar usuario de Google
+export const addGoogleUser = async ({ name, email }) => {
+  try {
+    // Verificar si el email ya existe
+    let user = await getUserByEmail(email);
+
+    // Si no existe, crearlo
+    if (!user) {
+      console.log(`Creando nuevo usuario de Google: ${email}`);
+      user = await createUser({
+        name,
+        email,
+        password: uuidv4(), // Generar contraseña aleatoria interna para cumplir con NOT NULL
+        role: 'user',
+        email_verified: true, // Google verifica el email
+        verification_token: null
+      });
+    } else {
+      console.log(`Usuario de Google existente: ${email}`);
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Error al manejar usuario de Google:', error);
+    throw error;
+  }
+};
+
 // Actualizar usuario
 export const updateUser = async (id, userData) => {
   try {

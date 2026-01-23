@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { verifyCredentials, verifyUserToken } from "../../../utils/userDbStore";
+import { verifyCredentials, verifyUserToken, addGoogleUser } from "../../../utils/userDbStore";
 import { initSupabaseDatabase } from "../../../utils/supabaseDb";
 
 // Inicializar la base de datos de Supabase al cargar la aplicación
@@ -59,13 +59,31 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, account, user, trigger, session }) {
-      if (account) {
+      if (account && user) {
         token.accessToken = account.access_token;
-      }
-      if (user) {
-        token.role = user.role;
-        token.phone = user.phone;
-        token.id = user.id;
+
+        // Manejar login con Google
+        if (account.provider === "google") {
+          try {
+            const dbUser = await addGoogleUser({
+              name: user.name,
+              email: user.email
+            });
+
+            if (dbUser) {
+              token.id = dbUser.id;
+              token.role = dbUser.role;
+              token.phone = dbUser.phone;
+            }
+          } catch (error) {
+            console.error("1Error sincronizando usuario de Google:", error);
+          }
+        } else {
+          // Login con credenciales (user ya viene de la DB)
+          token.role = user.role;
+          token.phone = user.phone;
+          token.id = user.id;
+        }
       }
       // Actualizar token cuando se actualiza la sesión desde el cliente
       if (trigger === "update" && session) {

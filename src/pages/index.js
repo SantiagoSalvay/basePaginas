@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { useSession, signIn } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import { FiSun, FiMoon, FiMenu, FiX } from "react-icons/fi";
@@ -26,23 +28,36 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.query.welcome && session) {
+      toast.success(`¡Bienvenido de nuevo, ${session.user.name || 'Usuario'}!`, {
+        duration: 4000,
+        position: 'top-center',
+        icon: '👋',
+      });
+      // Limpiar el parámetro de la URL sin recargar
+      router.replace('/', undefined, { shallow: true });
+    }
+  }, [router.query, session]);
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Cargar productos desde la API
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        
+
         // Obtener productos destacados de la API
         const featuredResponse = await axios.get('/api/featured-products');
         const featuredIds = featuredResponse.data;
-        
+
         // Si no hay productos destacados, seleccionar algunos aleatorios
         if (featuredIds.length === 0) {
           const response = await axios.get('/api/products');
-          
+
           // Obtener productos aleatorios de diferentes categorías
           const allProducts = [];
           Object.keys(response.data).forEach(category => {
@@ -50,38 +65,38 @@ export default function Home() {
               allProducts.push(...response.data[category]);
             }
           });
-          
+
           // Seleccionar aleatoriamente hasta 8 productos
           const randomProducts = [];
           const totalProducts = allProducts.length;
-          
+
           if (totalProducts > 0) {
             const maxProducts = Math.min(8, totalProducts);
             const selectedIndices = new Set();
-            
+
             while (selectedIndices.size < maxProducts) {
               const randomIndex = Math.floor(Math.random() * totalProducts);
               selectedIndices.add(randomIndex);
             }
-            
+
             selectedIndices.forEach(index => {
               randomProducts.push(allProducts[index]);
             });
           }
-          
+
           setFeaturedProducts(randomProducts);
         } else {
           // Hay productos destacados, obtener sus detalles
           const productsResponse = await axios.get('/api/products');
           const allProducts = [];
-          
+
           Object.keys(productsResponse.data).forEach(category => {
             allProducts.push(...productsResponse.data[category]);
           });
-          
+
           // Filtrar los productos destacados
           const featured = allProducts.filter(product => featuredIds.includes(product.id));
-          
+
           // MODIFICACIÓN: asegurarse de que solo se muestren descuentos explícitamente activos
           const featuredWithoutForcedDiscounts = featured.map(product => {
             // Si el producto no tiene descuento activo explícito, eliminar cualquier información de descuento
@@ -90,15 +105,15 @@ export default function Home() {
               const { discount, originalPrice, ...productWithoutDiscount } = product;
               return productWithoutDiscount;
             }
-            
+
             // Si tiene descuento activo, mantenerlo tal cual
             return product;
           });
-          
+
           // Establecer los productos destacados filtrados
           setFeaturedProducts(featuredWithoutForcedDiscounts);
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar productos destacados:", err);
@@ -195,7 +210,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="relative overflow-hidden">
-                <div 
+                <div
                   className="flex gap-8 animate-carousel hover:pause-animation"
                   style={{
                     width: `${featuredProducts.length * 3 * 320}px`
@@ -203,8 +218,8 @@ export default function Home() {
                 >
                   {/* Triplicamos los productos para crear un efecto de loop infinito sin saltos */}
                   {[...featuredProducts, ...featuredProducts, ...featuredProducts].map((product, index) => (
-                    <div 
-                      key={`${product.id}-${index}`} 
+                    <div
+                      key={`${product.id}-${index}`}
                       className="w-[300px] flex-shrink-0 carousel-item"
                       onMouseEnter={(e) => {
                         e.currentTarget.parentElement.style.animationPlayState = 'paused';
@@ -219,7 +234,7 @@ export default function Home() {
                 </div>
               </div>
             )}
-            
+
             <AnimatedSection animation="slideUp" delay={0.4} className="text-center mt-16">
               <Link href="/coleccion">
                 <button className="hero-button primary-button">Ver Colección Completa</button>
