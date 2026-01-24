@@ -1,42 +1,6 @@
 import nodemailer from "nodemailer";
-import fs from 'fs';
-import path from 'path';
-
-// Local storage path for users
-const USERS_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
-
-// Helper function to read users
-const getUsers = () => {
-  try {
-    if (!fs.existsSync(USERS_FILE_PATH)) {
-      // Create directory if it doesn't exist
-      const dir = path.dirname(USERS_FILE_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify([]));
-      return [];
-    }
-    const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading users file:', error);
-    return [];
-  }
-};
-
-// Helper function to write users
-const saveUsers = (users) => {
-  try {
-    const dir = path.dirname(USERS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2));
-  } catch (error) {
-    console.error('Error writing users file:', error);
-  }
-};
+import crypto from 'crypto';
+import { getUserByEmail, updateUser } from "../../../utils/userDbStore";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -50,46 +14,38 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'El correo electrónico es requerido' });
     }
 
-    // Generar token de verificación
-    const verificationToken = Math.random().toString(36).substring(2, 15) + 
-                             Math.random().toString(36).substring(2, 15);
-    
-    // Get users from local storage
-    const users = getUsers();
-    
-    // Buscar si el usuario ya existe
-    const existingUserIndex = users.findIndex(user => user.email === email);
-    
-    if (existingUserIndex === -1) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Buscar usuario en la base de datos real (Supabase)
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      // Por seguridad no revelamos si no existe
+      return res.status(200).json({ message: 'Si el correo existe, se enviará un enlace de verificación' });
     }
-    
-    // Actualizar el usuario con el token de verificación
-    users[existingUserIndex] = {
-      ...users[existingUserIndex],
-      verificationToken,
-      emailVerified: false
-    };
-    
-    // Save updated users
-    saveUsers(users);
-    
-    // Enviar correo de verificación
+
+    // Generar token seguro con expiración (24h)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpires = new Date();
+    verificationTokenExpires.setHours(verificationTokenExpires.getHours() + 24);
+
+    // Actualizar usuario
+    await updateUser(user.id, {
+      verification_token: verificationToken,
+      verification_token_expires: verificationTokenExpires.toISOString(),
+      email_verified: false
+    });
+
+    // Enviar correo
     await sendVerificationEmail(email, verificationToken);
-    
+
     return res.status(200).json({ message: 'Correo de verificación enviado' });
   } catch (error) {
-    console.error('Error al enviar correo de verificación:', error);
+    console.error('Error en proceso de verificación de email');
     return res.status(500).json({ message: 'Error al enviar correo de verificación' });
   }
 }
 
-// Función para enviar correo de verificación
 async function sendVerificationEmail(email, token) {
-  // Configurar transporte de correo
   const transporter = nodemailer.createTransport({
-    // En un entorno de producción, configura tu servicio de correo real aquí
-    // Para desarrollo, puedes usar servicios como Mailtrap, SendGrid, etc.
     host: process.env.EMAIL_SERVER_HOST,
     port: process.env.EMAIL_SERVER_PORT,
     auth: {
@@ -98,11 +54,9 @@ async function sendVerificationEmail(email, token) {
     },
     secure: process.env.EMAIL_SERVER_SECURE === 'true'
   });
-  
-  // URL de verificación
+
   const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify?token=${token}`;
-  
-  // Contenido del correo
+
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: email,
@@ -123,7 +77,6 @@ async function sendVerificationEmail(email, token) {
       </div>
     `
   };
-  
-  // Enviar correo
+
   await transporter.sendMail(mailOptions);
 }

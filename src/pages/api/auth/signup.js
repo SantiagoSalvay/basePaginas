@@ -9,9 +9,11 @@ function generateUniqueId() {
   return uuidv4();
 }
 
-// Función para generar un token de verificación
+import crypto from 'crypto';
+
+// Función para generar un token de verificación único y seguro
 function generateVerificationToken() {
-  return uuidv4();
+  return crypto.randomBytes(32).toString('hex');
 }
 
 // Función para enviar correo de verificación
@@ -91,11 +93,19 @@ const handler = async (req, res) => {
 
     const { name, email, password, phone } = req.body;
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+
     // Validación robusta
     const validation = validateInput({
       name: { required: true, type: 'string', minLength: 2, maxLength: 100 },
       email: { required: true, type: 'email' },
-      password: { required: true, type: 'string', minLength: 6, maxLength: 128 },
+      password: {
+        required: true,
+        type: 'string',
+        minLength: 12,
+        maxLength: 128,
+        pattern: passwordRegex
+      },
       phone: { required: false, type: 'string', maxLength: 20 }
     })
 
@@ -121,11 +131,13 @@ const handler = async (req, res) => {
       return res.status(400).json({ message: 'Este correo electrónico ya está registrado' });
     }
 
-    // Generar token de verificación
+    // Generar token de verificación con expiración (24 horas)
     const verificationToken = generateVerificationToken();
+    const verificationTokenExpires = new Date();
+    verificationTokenExpires.setHours(verificationTokenExpires.getHours() + 24);
 
     // Hashear la contraseña
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12); // Aumentar salt rounds a 12
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Crear nuevo usuario
@@ -138,6 +150,7 @@ const handler = async (req, res) => {
       role: 'user',
       emailVerified: false,
       verificationToken,
+      verification_token_expires: verificationTokenExpires.toISOString(),
       createdAt: new Date().toISOString()
     };
 

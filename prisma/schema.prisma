@@ -20,6 +20,7 @@ model User {
   role                 String    @default("user") @db.VarChar(20)
   emailVerified        Boolean   @default(false) @map("email_verified")
   verificationToken    String?   @map("verification_token") @db.VarChar(100)
+  verificationTokenExpires DateTime? @map("verification_token_expires") @db.Timestamptz(6)
   resetToken           String?   @map("reset_token") @db.VarChar(100)
   resetTokenExpires    DateTime? @map("reset_token_expires") @db.Timestamptz(6)
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)

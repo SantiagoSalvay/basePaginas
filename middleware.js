@@ -3,17 +3,33 @@ import { NextResponse } from "next/server"
 
 export default withAuth(
   function middleware(req) {
-    // Headers de seguridad
-    const requestHeaders = new Headers(req.headers)
-    requestHeaders.set('X-Content-Type-Options', 'nosniff')
-    requestHeaders.set('X-Frame-Options', 'DENY')
-    requestHeaders.set('X-XSS-Protection', '1; mode=block')
+    // Headers de seguridad mejorados
+    const response = NextResponse.next()
 
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    })
+    // Configuración CSP estricta
+    const csp = `
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' data: https:;
+      font-src 'self' https://fonts.gstatic.com;
+      connect-src 'self' https://*.supabase.co https://accounts.google.com;
+      frame-src 'self' https://accounts.google.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+    `.replace(/\s{2,}/g, ' ').trim()
+
+    response.headers.set('Content-Security-Policy', csp)
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-XSS-Protection', '0')
+    response.headers.set('Referrer-Policy', 'no-referrer-when-downgrade')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()')
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+
+    return response
   },
   {
     callbacks: {

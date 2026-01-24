@@ -47,40 +47,25 @@ export const getUserByResetToken = async (token) => {
 // Verificar credenciales de usuario
 export const verifyCredentials = async (email, password) => {
   try {
-    console.log(`Intentando verificar credenciales para: ${email}`);
     const user = await getUserByEmail(email);
 
     if (!user) {
-      console.log(`Usuario no encontrado para el email: ${email}`);
       return null;
     }
 
-    console.log(`Usuario encontrado: ${user.email}, rol: ${user.role}`);
-
     if (user.password) {
-      // Verificar si la contraseña coincide
-      console.log('Comparando contraseñas...');
       try {
         const passwordMatch = await bcrypt.compare(password, user.password);
-        console.log(`Resultado de comparación de contraseñas: ${passwordMatch}`);
 
         if (passwordMatch) {
-          // No devolver la contraseña
           const { password, ...userWithoutPassword } = user;
-          console.log('Autenticación exitosa, devolviendo usuario sin contraseña');
           return userWithoutPassword;
         }
       } catch (bcryptError) {
-        console.error('Error en la comparación de bcrypt:', bcryptError);
-        // Si hay un error en el formato del hash, intentamos una comparación directa (solo para depuración)
-        console.log('Contraseña proporcionada:', password);
-        console.log('Hash almacenado:', user.password);
+        console.error('Error en la comparación de bcrypt');
       }
-    } else {
-      console.log('Usuario no tiene contraseña almacenada');
     }
 
-    console.log('Fallo en la autenticación');
     return null;
   } catch (error) {
     console.error('Error al verificar credenciales:', error);
@@ -91,7 +76,16 @@ export const verifyCredentials = async (email, password) => {
 // Agregar un nuevo usuario
 export const addUser = async (userData) => {
   try {
-    const { name, email, password, phone, role = 'user', emailVerified = false, verificationToken } = userData;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      role = 'user',
+      emailVerified = false,
+      verificationToken,
+      verification_token_expires
+    } = userData;
 
     // Verificar si el email ya existe
     const existingUser = await getUserByEmail(email);
@@ -114,7 +108,8 @@ export const addUser = async (userData) => {
       phone: phone || null,
       role,
       email_verified: emailVerified,
-      verification_token: verificationToken || null
+      verification_token: verificationToken || null,
+      verification_token_expires: verification_token_expires || null
     });
 
     return newUser;
@@ -210,11 +205,15 @@ export const verifyUserToken = async (token) => {
 
     if (searchError) throw searchError;
 
-    if (!users || users.length === 0) {
-      return { success: false, message: 'Token inválido o expirado' };
-    }
-
     const user = users[0];
+
+    // Verificar si el token ha expirado
+    if (user.verification_token_expires) {
+      const expiryDate = new Date(user.verification_token_expires);
+      if (new Date() > expiryDate) {
+        return { success: false, message: 'El token de verificación ha expirado' };
+      }
+    }
 
     // Actualizar el estado de verificación del usuario
     const { error: updateError } = await supabaseAdmin

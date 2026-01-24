@@ -1,18 +1,10 @@
 import nodemailer from 'nodemailer';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
 
 // Función para enviar correo de recuperación de contraseña
 async function sendPasswordResetEmail(email, name, token) {
-  console.log('Iniciando envío de correo de recuperación a:', email);
-
   try {
-    // Configurar el transportador de correo
-    console.log('Configurando transportador de correo con:', {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD ? '********' : 'No configurado'
-    });
-
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -21,12 +13,9 @@ async function sendPasswordResetEmail(email, name, token) {
       },
     });
 
-    // URL base para el enlace de restablecimiento
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
-    console.log('URL de restablecimiento:', resetUrl);
 
-    // Plantilla de correo HTML
     const mailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -50,7 +39,6 @@ async function sendPasswordResetEmail(email, name, token) {
       </div>
     `;
 
-    // Opciones del correo
     const mailOptions = {
       from: `"ModaVista" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -58,56 +46,38 @@ async function sendPasswordResetEmail(email, name, token) {
       html: mailHtml,
     };
 
-    console.log('Opciones de correo configuradas:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject
-    });
-
-    // Enviar el correo
-    console.log('Intentando enviar correo...');
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Correo de recuperación enviado:', info.messageId);
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error detallado al enviar correo de recuperación:', error);
+    console.error('Error al enviar correo de recuperación');
     return false;
   }
 }
 
 export default async function handler(req, res) {
-  // Solo permitir solicitudes POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
   try {
     const { email } = req.body;
-    console.log('Solicitud de recuperación de contraseña para:', email);
 
     if (!email) {
       return res.status(400).json({ error: 'El correo electrónico es requerido' });
     }
 
-    // Buscar el usuario por email usando Supabase
     const user = await getUserByEmail(email);
 
     if (!user) {
-      console.log('Usuario no encontrado para el correo:', email);
-      // Por seguridad, no revelamos si el correo existe o no
+      // Por seguridad, no revelamos si el correo existe
       return res.status(200).json({ success: true, message: 'Si el correo existe, se enviará un enlace de recuperación' });
     }
 
-    console.log('Usuario encontrado:', user.name);
-
-    // Generar token de restablecimiento
-    const resetToken = uuidv4();
+    // Generar token de restablecimiento seguro
+    const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date();
-    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Expira en 1 hora
-    console.log('Token generado:', resetToken);
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
 
-    // Actualizar usuario con token de restablecimiento
-    // Nota: Supabase usa snake_case para las columnas
     const updateData = {
       reset_token: resetToken,
       reset_token_expires: resetTokenExpiry.toISOString(),
@@ -116,24 +86,18 @@ export default async function handler(req, res) {
     const updatedUser = await updateUser(user.id, updateData);
 
     if (!updatedUser) {
-      console.error('Error al guardar el token en la base de datos');
       return res.status(500).json({ error: 'Error al generar el token de recuperación' });
     }
 
-    console.log('Token guardado correctamente');
-
-    // Enviar correo de recuperación
     const emailSent = await sendPasswordResetEmail(email, user.name, resetToken);
 
     if (!emailSent) {
-      console.error('Error al enviar el correo de recuperación');
       return res.status(500).json({ error: 'Error al enviar el correo de recuperación' });
     }
 
-    console.log('Proceso de recuperación completado correctamente');
     return res.status(200).json({ success: true, message: 'Correo de recuperación enviado correctamente' });
   } catch (error) {
-    console.error('Error en el endpoint de recuperación de contraseña:', error);
+    console.error('Error en proceso de recuperación');
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }

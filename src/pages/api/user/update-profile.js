@@ -1,34 +1,30 @@
-// src/pages/api/user/update-profile.js
-import { getUserByEmail, updateUser } from '../../../utils/userDbStore';
+import { updateUser } from '../../../utils/userDbStore';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(req, res) {
-  // Solo permitir método POST
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método no permitido' });
   }
 
   try {
-    const { name, email, phone } = req.body;
-
-    // Validaciones básicas
-    if (!name || !email) {
-      return res.status(400).json({ message: 'El nombre y el email son obligatorios' });
+    const session = await getServerSession(req, res, authOptions);
+    if (!session) {
+      return res.status(401).json({ message: 'No autorizado' });
     }
 
-    // Buscar el usuario por email
-    const user = await getUserByEmail(email);
+    const { name, phone } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    if (!name) {
+      return res.status(400).json({ message: 'El nombre es obligatorio' });
     }
 
-    // Actualizar la información del usuario
-    const updatedUser = await updateUser(user.id, {
+    // Actualizar la información del usuario usando el ID de la sesión (Seguridad: IDOR Mitigated)
+    const updatedUser = await updateUser(session.user.id, {
       name,
       phone: phone || '',
     });
 
-    // Responder con éxito
     return res.status(200).json({
       message: 'Información actualizada correctamente',
       user: {
@@ -39,7 +35,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Error al actualizar perfil:', error);
+    console.error('Error al actualizar perfil');
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 }
