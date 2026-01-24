@@ -1,9 +1,12 @@
-# ===============================
+﻿# ===============================
 # Build stage
 # ===============================
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+# Install openssl for Prisma
+RUN apk add --no-cache openssl
 
 COPY . .
 
@@ -19,7 +22,10 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# 👉 INSTALAR PNPM EN RUNTIME
+# Install openssl for Prisma runtime
+RUN apk add --no-cache openssl
+
+#  INSTALAR PNPM EN RUNTIME
 RUN npm install -g pnpm
 
 COPY --from=builder /app/package.json ./
