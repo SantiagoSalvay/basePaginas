@@ -52,5 +52,10 @@
     "eslint-config-next": "^16.1.4",
     "prisma": "^5.22.0",
     "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch@>=9.0.0 <9.0.7": ">=9.0.7"
+    }
   }
 }
